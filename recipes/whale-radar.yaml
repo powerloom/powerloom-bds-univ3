@@ -1,0 +1,16 @@
+name: whale-radar
+description: Whale swap alerts across indexed Uniswap V3 pools (stream default).
+heartbeat:
+  mode: stream
+  interval_seconds: 30
+filters:
+  threshold_usd: 25000
+client:
+  call_timeout_ms: 120000
+  max_alerts_per_heartbeat: 10
+  default_pools:
+    - "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
+verification:
+  mode: passive
+dispatch:
+  channel: stdout

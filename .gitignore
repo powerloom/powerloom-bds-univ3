@@ -1,0 +1,4 @@
+node_modules/
+.powerloom/
+*.log
+.DS_Store
