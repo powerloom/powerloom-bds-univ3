@@ -25,7 +25,10 @@ const defaults = {
   filters: { threshold_usd: 25000 },
   client: {
     call_timeout_ms: 60000,
-    default_pools: ["0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"],
+    poll_fallback_pools: [
+      "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640",
+      "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8",
+    ],
   },
   dispatch: { channel: "stdout" },
 };
@@ -72,6 +75,9 @@ async function runStream() {
   let state = loadState(stateFile);
   process.env.BDS_MCP_CALL_TIMEOUT_MS =
     process.env.BDS_MCP_CALL_TIMEOUT_MS || String(cfg.client?.call_timeout_ms || 120000);
+  console.error(
+    "[whale-radar] mode=stream tool=bds_mpp_stream_allTrades (all indexed pools; poll_fallback_pools unused)"
+  );
 
   for (;;) {
     const params = { max_events: 50 };
@@ -120,8 +126,14 @@ async function runStream() {
 }
 
 async function runPoll() {
-  const pools = cfg.client?.default_pools || defaults.client.default_pools;
+  const pools =
+    cfg.client?.poll_fallback_pools ||
+    cfg.client?.default_pools ||
+    defaults.client.poll_fallback_pools;
   const intervalSec = cfg.heartbeat?.interval_seconds || 30;
+  console.error(
+    `[whale-radar] mode=poll pools=${pools.length} tool=bds_mpp_snapshot_trades_pool_address`
+  );
   let state = loadState(stateFile);
   process.env.BDS_MCP_CALL_TIMEOUT_MS =
     process.env.BDS_MCP_CALL_TIMEOUT_MS || String(cfg.client?.call_timeout_ms || 60000);

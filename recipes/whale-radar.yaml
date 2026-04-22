@@ -1,3 +1,13 @@
+# -----------------------------------------------------------------------------
+# Whale Radar — default path is MULTI-POOL
+#
+# heartbeat.mode: stream  →  MCP tool `bds_mpp_stream_allTrades` (entire indexed
+# market: all pools / all trades in one stream). `client.poll_fallback_pools`
+# is IGNORED for stream mode — see `scripts/whale-radar.mjs` → `runStream()`.
+#
+# Only if you run:  node scripts/whale-radar.mjs --mode poll
+# does the script use per-pool snapshot tools and the list below.
+# -----------------------------------------------------------------------------
 name: whale-radar
 description: Whale swap alerts across indexed Uniswap V3 pools (stream default).
 heartbeat:
@@ -8,8 +18,9 @@ filters:
 client:
   call_timeout_ms: 120000
   max_alerts_per_heartbeat: 10
-  default_pools:
+  poll_fallback_pools:
     - "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
+    - "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8"
 verification:
   mode: passive
 dispatch:

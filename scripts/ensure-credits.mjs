@@ -30,7 +30,7 @@ async function main() {
     const n = typeof balance === "number" ? balance : parseFloat(balance);
     if (Number.isFinite(n) && n <= 0) {
       console.error(
-        "Zero credits — top up at https://bds.powerloom.io (free tier may still apply; check dashboard)."
+        "Zero credits — top up at https://bds-metering.powerloom.io/metering (free tier may still apply; check dashboard)."
       );
       process.exit(1);
     }

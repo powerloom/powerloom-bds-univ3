@@ -8,7 +8,7 @@ description: |
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "USDC swaps", "Powerloom", "verify on-chain".
 version: 0.1.0
-homepage: https://bds.powerloom.io
+homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
   - defi
@@ -37,7 +37,7 @@ metadata:
 
 ## Install
 
-1. **Get an API key** — [bds.powerloom.io](https://bds.powerloom.io) (~2 minutes: sign up, optional top-up, copy key).
+1. **Get an API key** — use the metering **origin** for CLI/API ([bds-metering.powerloom.io](https://bds-metering.powerloom.io)); **browser** signup and billing at [bds-metering.powerloom.io/metering](https://bds-metering.powerloom.io/metering) (~2 minutes: sign up, optional top-up, copy key).
 2. **Export** `POWERLOOM_API_KEY=sk_live_...` wherever OpenClaw reads environment variables.
 3. **Sanity check:** `node scripts/ensure-credits.mjs` — prints balance; exits non-zero on 401 / zero balance.
 4. **Default MCP endpoint:** `https://bds-mcp.powerloom.io/sse` — override with `POWERLOOM_MCP_URL` if needed.
@@ -62,9 +62,9 @@ Pre-built scripts + `recipes/*.yaml` defaults — prefer these over ad-hoc scrip
 
 | Recipe | Script |
 |--------|--------|
-| Whale Radar | `node scripts/whale-radar.mjs` (`--mode poll` optional) |
+| Whale Radar | `node scripts/whale-radar.mjs` — default **stream = all pools**; `--mode poll` uses `poll_fallback_pools` only |
 | Token-Flow | `node scripts/token-flow.mjs` (`--token 0x...`) |
-| DeFi Analyst | `node scripts/defi-analyst.mjs` (`--once` for one report) |
+| DeFi Analyst | `node scripts/defi-analyst.mjs` — default **multi-pool** (`bds_mpp_stream_allTrades` + all-pools volume); `filters.scope: single_pool` for one-pool only (`--once` = one shot) |
 
 ## Model guidance
 

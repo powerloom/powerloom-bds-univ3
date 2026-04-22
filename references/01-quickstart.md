@@ -1,6 +1,6 @@
 # Quickstart (~10 minutes)
 
-1. **Sign up** at [bds.powerloom.io](https://bds.powerloom.io) — email, verify, copy API key (browser flow when live; CLI `bds-agent signup` still works).
+1. **Get an API key** — **CLI / API:** metering origin [bds-metering.powerloom.io](https://bds-metering.powerloom.io) (`bds-agent signup`; see [agent guide](https://github.com/powerloom/bds-agent-py/blob/main/docs/USER_GUIDE.md)). **Browser:** signup and top-ups at [bds-metering.powerloom.io/metering](https://bds-metering.powerloom.io/metering).
 2. **Export** `POWERLOOM_API_KEY=sk_live_...` in the environment OpenClaw uses (or your shell profile).
 3. **Optional** — default MCP URL is `https://bds-mcp.powerloom.io/sse`. Override with `POWERLOOM_MCP_URL` if directed.
 4. **Check credits**: `node scripts/ensure-credits.mjs` — should print balance JSON and exit 0.
