@@ -6,6 +6,7 @@
  *   EVM_PRIVATE_KEY   — hex, optionally 0x-prefixed (funds the transfer; becomes the account’s payer address)
  *   PLAN_ID           — plan id from GET /credits/plans
  *   CHAIN_ID          — EIP-155 chain id (must match the plan row)
+ *   EVM_CHAIN_ID      — same as CHAIN_ID (optional alias; used by bds-agent profile `.evm.env`)
  *   TOKEN_SYMBOL      — must match plan.token_symbol for that chain
  *
  * Optional:
@@ -31,7 +32,7 @@ async function main() {
   );
   const pk = (process.env.EVM_PRIVATE_KEY || "").trim();
   const planId = (process.env.PLAN_ID || "").trim();
-  const chainId = parseInt(process.env.CHAIN_ID || "", 10);
+  const chainId = parseInt(process.env.CHAIN_ID || process.env.EVM_CHAIN_ID || "", 10);
   const tokenSymbol = (process.env.TOKEN_SYMBOL || "").trim();
   const agentName = (process.env.AGENT_NAME || "openclaw-pay-agent").trim();
   const emailRaw = (process.env.EMAIL || "").trim();
