@@ -6,7 +6,7 @@ description: |
   and independently verifiable via verify_data_provenance. Ships with Whale Radar,
   Token-Flow, and Autonomous DeFi Analyst recipes. Metered: use your Powerloom BDS API key.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
-  "USDC swaps", "Powerloom", "verify on-chain".
+  "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
 version: 0.1.0
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
@@ -20,7 +20,7 @@ tags:
   - agent
 metadata:
   openclaw:
-    emoji: "UniV3"
+    emoji: "🦄"
     requires:
       bins: ["node"]
       env:
@@ -37,10 +37,25 @@ metadata:
 
 ## Install
 
-1. **Get an API key** — use the metering **origin** for CLI/API ([bds-metering.powerloom.io](https://bds-metering.powerloom.io)); **browser** signup and billing at [bds-metering.powerloom.io/metering](https://bds-metering.powerloom.io/metering) (~2 minutes: sign up, optional top-up, copy key).
+There are **two** supported ways to obtain a BDS API key (same metering origin for both: [bds-metering.powerloom.io](https://bds-metering.powerloom.io)).
+
+### Path A — Browser / device auth (default)
+
+1. Open [bds-metering.powerloom.io/metering](https://bds-metering.powerloom.io/metering) and complete device-auth signup; copy your key when shown.
 2. **Export** `POWERLOOM_API_KEY=sk_live_...` wherever OpenClaw reads environment variables.
 3. **Sanity check:** `node scripts/ensure-credits.mjs` — prints balance; exits non-zero on 401 / zero balance.
-4. **Default MCP endpoint:** `https://bds-mcp.powerloom.io/sse` — override with `POWERLOOM_MCP_URL` if needed.
+
+### Path B — Pay signup (headless, wallet-funded)
+
+For agents and CI without a browser: fund an EVM wallet, then run the quote → pay → claim flow against `POST /signup/pay/quote` and `POST /signup/pay/claim` on the metering API.
+
+1. From [GET /credits/plans](https://bds-metering.powerloom.io/credits/plans) (same origin), pick a `plan_id`, `chain_id`, and matching `token_symbol` for a row you can pay.
+2. Set `EVM_PRIVATE_KEY`, `PLAN_ID`, `CHAIN_ID`, `TOKEN_SYMBOL`, and usually `EVM_RPC_URL` (or rely on the quote’s `rpc_hint` if the provider allows it), then:
+   - **Node (this repo):** `node scripts/signup-pay.mjs` — see script header for env. Requires `npm install` (adds `ethers` for the transfer).
+   - **Python (Powerloom `bds-agent` CLI):** `bds-agent credits setup-evm` then `bds-agent signup-pay --plan-id … --chain-id … --token-symbol …` (saves the key under your profile; same metering URL as device signup).
+3. **Export** the printed `sk_live_...` as `POWERLOOM_API_KEY` (treat it like a password).
+
+**Default MCP endpoint:** `https://bds-mcp.powerloom.io/sse` — override with `POWERLOOM_MCP_URL` if needed.
 
 Generic tool runner: `node scripts/powerloom-mcp-client.mjs <tool_name> '{}'`
 
