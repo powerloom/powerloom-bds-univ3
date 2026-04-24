@@ -7,7 +7,7 @@ description: |
   Token-Flow, and Autonomous DeFi Analyst recipes. Billing: metering service HTTP APIs; optional bds-agent CLI. Agent-first: plan + wallet then pay-signup, then top-up.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
-version: 0.0.4
+version: 0.0.3
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
