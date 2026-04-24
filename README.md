@@ -19,6 +19,8 @@ export POWERLOOM_API_KEY=sk_live_...
 node scripts/ensure-credits.mjs
 ```
 
+**Metering (no `bds-agent` required):** `scripts/signup-pay.mjs` (new key, pay-signup, ERC-20) and `scripts/credits-topup.mjs` (more credits, existing key — `POST /credits/plans` + pay + `POST /credits/topup`). See **`SKILL.md`**.
+
 Optional: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `dispatch.channel: telegram` in `recipes/*.yaml`.
 
 ## Links (metering service)
