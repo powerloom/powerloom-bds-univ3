@@ -11,7 +11,8 @@
  *
  * Optional:
  *   METERING_BASE_URL — default https://bds-metering.powerloom.io
- *   EVM_RPC_URL       — if unset, uses rpc_hint from the quote (may be rate-limited)
+ *   EVM_RPC_URL       — if unset, uses rpc_hint from the quote (public RPC from metering;
+ *                       may be null if no public hint — then set this)
  *   AGENT_NAME        — default openclaw-pay-agent
  *   EMAIL             — if set, must not already be registered
  *
@@ -78,7 +79,9 @@ async function main() {
 
   const rpcUrl = (process.env.EVM_RPC_URL || "").trim() || quote.rpc_hint;
   if (!rpcUrl) {
-    console.error("No RPC: set EVM_RPC_URL or ensure the quote includes rpc_hint.");
+    console.error(
+      "No RPC: set EVM_RPC_URL (quote.rpc_hint is null when metering has no public_rpc_url for that chain).",
+    );
     process.exit(1);
   }
 

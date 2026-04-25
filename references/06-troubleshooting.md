@@ -4,8 +4,8 @@
 |---------|--------|-----|
 | HTTP 401 | Bad or missing API key | Re-copy key from the metering dashboard ([bds-metering.powerloom.io/metering](https://bds-metering.powerloom.io/metering)) or your CLI profile; fix `POWERLOOM_API_KEY`. |
 | HTTP 402 | Credits exhausted | Top up; reduce recipe cadence; run `ensure-credits.mjs` before crons. |
-| HTTP 429 | Rate limit | Increase heartbeat interval; prefer stream mode over poll fan-out. |
-| Tool timeout | Backlog / slow finalization | Raise `BDS_MCP_CALL_TIMEOUT_MS`; switch Whale Radar to stream mode. |
+| HTTP 429 | Rate limit | Increase heartbeat interval; for **cron** schedules prefer **poll** (fewer parallel calls) instead of many snapshot fan-outs. |
+| Tool timeout | Backlog / slow finalization | Raise `BDS_MCP_CALL_TIMEOUT_MS`; reduce `max_events` on streams, or use **poll** / smaller snapshot scope. |
 | Empty stream | Idle chain / catch-up | Wait; check `from_epoch` in state file. |
 | Wrong verify | Confused epoch vs block | Use `epoch_id` from snapshot / `verification` payload, not `blockNumber`. |
 | Odd outputs after model swap | OpenClaw context mismatch | Restart OpenClaw; recipes are script-driven — state files live under `.powerloom/`. |

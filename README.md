@@ -10,6 +10,10 @@ Every data point this skill fetches is finalized onchain by Powerloom's decentra
 - **Token-Flow** — all swaps touching a configured token (default USDC) across pools derived at runtime.
 - **Autonomous DeFi Analyst** — default **multi-pool** stream batch + all-pools token volume; set **`filters.scope: single_pool`** in `recipes/defi-analyst.yaml` for legacy single-pool snapshots only.
 
+## Integrators (OpenClaw, cron)
+
+For **scheduled heartbeats**, prefer **poll** mode and snapshot MCP tools — not stream tools. Streams suit **long-running background** services; see **Hosts & integrators** in `SKILL.md`.
+
 ## Setup
 
 ```bash

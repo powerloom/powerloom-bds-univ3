@@ -1,6 +1,9 @@
 # -----------------------------------------------------------------------------
 # Autonomous DeFi Analyst — default: MULTI-POOL (stream + token-wide volume)
 #
+# OpenClaw / cron: this recipe is stream-first; for scheduled jobs prefer
+# `node scripts/defi-analyst.mjs --once` or a poll-based script — see SKILL.md.
+#
 # filters.scope: multi (default)  →  `bds_mpp_stream_allTrades` for cross-pool
 # trade batch + `bds_mpp_tradeVolumeAllPools_token_address_time_interval` for
 # 1h volume on the token (default USDC mainnet). Aligns with SKILL.md / token-first.

@@ -12,7 +12,8 @@
  *
  * Optional:
  *   METERING_BASE_URL  — default https://bds-metering.powerloom.io
- *   EVM_RPC_URL        — if unset, uses plan.rpc_url or chains[].rpc_url for that chain
+ *   EVM_RPC_URL        — if unset, uses plan.rpc_url or chains[].rpc_url (public hints from
+ *                        GET /credits/plans; either may be empty — then you must set this)
  *
  * Usage:
  *   node scripts/credits-topup.mjs
@@ -88,7 +89,11 @@ async function main() {
   }
 
   const rpcUrl = resolveRpc(plan, chains, rpcOverride);
-  if (!rpcUrl) fail("No RPC: set EVM_RPC_URL or ensure the plan / chains include rpc_url");
+  if (!rpcUrl) {
+    fail(
+      "No RPC: set EVM_RPC_URL (metering may leave chains[].rpc_url empty when no public_rpc_url is configured)",
+    );
+  }
 
   const recipient = resolveRecipient(plan, chains);
   if (!recipient) fail("No recipient: plan.recipient and chains[].recipient are empty");

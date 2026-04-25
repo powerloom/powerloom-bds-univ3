@@ -1,3 +1,4 @@
+# For cron / OpenClaw: prefer mode: poll — see SKILL.md (Hosts & integrators).
 name: token-flow
 description: Every swap touching a token (default USDC) across indexed pools.
 heartbeat:

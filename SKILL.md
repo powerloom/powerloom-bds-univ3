@@ -7,7 +7,7 @@ description: |
   Token-Flow, and Autonomous DeFi Analyst recipes. Billing: metering service HTTP APIs; optional bds-agent CLI. Agent-first: plan + wallet then pay-signup, then top-up.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
-version: 0.0.3
+version: 0.0.4
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
@@ -51,7 +51,7 @@ metadata:
 
 | What | How |
 |------|-----|
-| List SKUs | `GET {BASE}/credits/plans` — no auth. Choose a plan row: `id`, `chain_id`, `token_symbol` (and note `payment_kind`: ERC-20 vs native / CGT). |
+| List SKUs | `GET {BASE}/credits/plans` — no auth. Choose a plan row: `id`, `chain_id`, `token_symbol` (and note `payment_kind`: ERC-20 vs native / CGT). **`chains[].rpc_url`** is a **public** JSON-RPC hint only when the metering deployment sets it; it may be **empty** — use **`EVM_RPC_URL`** for wallet / script calls in that case. |
 | New key, wallet-only | **Pay-signup:** `POST {BASE}/signup/pay/quote` → pay on chain → `POST {BASE}/signup/pay/claim` with `signup_nonce` + `tx_hash`. Returns `api_key`. |
 | New key, browser | Human device flow on `{BASE}/metering` (same service). |
 | More credits, existing key | `POST {BASE}/credits/topup` with `Authorization: Bearer sk_live_…` and tx / plan (not the pay-signup endpoints). |
@@ -85,7 +85,7 @@ metadata:
 | Script | What it does |
 |--------|----------------|
 | `node scripts/signup-pay.mjs` | **New** key: pay-signup (quote → **ERC-20** pay → claim). `POWERLOOM_API_KEY` not set yet. |
-| `node scripts/credits-topup.mjs` | **More** credits: uses existing **`POWERLOOM_API_KEY`**, fetches `GET /credits/plans`, matches **`PLAN_ID` + `EVM_CHAIN_ID` + `TOKEN_SYMBOL`**, sends **ERC-20** or **native** per `payment_kind`, then **`POST /credits/topup`**. Set **`EVM_RPC_URL`** if the public `rpc_url` in plans is redacted. |
+| `node scripts/credits-topup.mjs` | **More** credits: uses existing **`POWERLOOM_API_KEY`**, fetches `GET /credits/plans`, matches **`PLAN_ID` + `EVM_CHAIN_ID` + `TOKEN_SYMBOL`**, sends **ERC-20** or **native** per `payment_kind`, then **`POST /credits/topup`**. Set **`EVM_RPC_URL`** when **`chains[].rpc_url`** is empty or you need a specific node (the API never exposes the server’s private RPC). |
 | `node scripts/ensure-credits.mjs` | **Balance** only (`GET /credits/balance`); no purchase. |
 
 `npm install` once (adds `ethers`).
@@ -126,6 +126,12 @@ Pre-built scripts + `recipes/*.yaml` defaults — prefer these over ad-hoc scrip
 
 Recipes produce the same stdout/Telegram output regardless of model. Ad-hoc “compose your own” prompts work best on GPT-4–class or GLM-5+; weaker local models may collapse multi-pool prompts onto one pool — **use the Token-Flow recipe** instead.
 
+## Hosts & integrators (OpenClaw, cron, heartbeats)
+
+**Scheduled / cron-style runs** (short heartbeat, one shot per tick): **prefer poll mode** and **snapshot** MCP tools — e.g. `bds_mpp_snapshot_allTrades`, `bds_mpp_snapshot_trades_pool_address`, or the `--mode poll` / `heartbeat.mode: poll` path on bundled recipes. Each invocation stays a **bounded** HTTP-style call; easier on credits and timeouts.
+
+**Stream tools** (`bds_mpp_stream_allTrades`, SSE catalog routes): use only when the **end user** wants a **long-running background** data consumer, deployed **outside** a typical cron “wake up → one batch → exit” model. **Do not** default generated skill glue to streams for cron: streams open a different metering/session pattern and are a poor fit for start-stop heartbeats. This repo’s recipes still **default to stream** for interactive demos; integrators should override to **poll** in `recipes/*.yaml` or script flags for production crons.
+
 ## References
 
-See `references/` for quickstart, full tool table, verification, credit budget, scope, troubleshooting, and prompt patterns.
+See `references/` for quickstart, full tool table, verification, credit budget, scope, troubleshooting, prompt patterns, and cron integrator notes in quickstart + tool catalog.

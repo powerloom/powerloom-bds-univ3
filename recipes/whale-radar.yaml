@@ -1,6 +1,9 @@
 # -----------------------------------------------------------------------------
 # Whale Radar — default path is MULTI-POOL
 #
+# OpenClaw / cron: set heartbeat.mode: poll (or --mode poll) for scheduled
+# heartbeats; reserve stream for long-running services — see SKILL.md.
+#
 # heartbeat.mode: stream  →  MCP tool `bds_mpp_stream_allTrades` (entire indexed
 # market: all pools / all trades in one stream). `client.poll_fallback_pools`
 # is IGNORED for stream mode — see `scripts/whale-radar.mjs` → `runStream()`.
