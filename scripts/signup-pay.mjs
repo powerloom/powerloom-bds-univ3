@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * Headless pay-signup: POST /signup/pay/quote → ERC-20 transfer → POST /signup/pay/claim.
+ * Headless pay-signup: POST /signup/pay/quote → pay on-chain → POST /signup/pay/claim.
+ * Uses quote.payment_kind: **erc20** = ERC-20 transfer; **native_value** = native/CGT value
+ * send to recipient (e.g. POWER on chain 7869). Must match the plan (see GET /credits/plans).
  *
  * Required env:
  *   EVM_PRIVATE_KEY   — hex, optionally 0x-prefixed (funds the transfer; becomes the account’s payer address)
@@ -95,9 +97,20 @@ async function main() {
   }
 
   const signer = wallet.connect(provider);
-  const token = new ethers.Contract(quote.token_contract, ERC20_ABI, signer);
   const amount = BigInt(quote.amount_atomic);
-  const tx = await token.transfer(quote.recipient, amount);
+  const isNative = quote.payment_kind === "native_value";
+  let tx;
+  if (isNative) {
+    console.error("[signup-pay] payment_kind=native_value → send native/CGT value to recipient");
+    tx = await signer.sendTransaction({
+      to: quote.recipient,
+      value: amount,
+    });
+  } else {
+    console.error("[signup-pay] payment_kind=erc20 → ERC-20 transfer to recipient");
+    const token = new ethers.Contract(quote.token_contract, ERC20_ABI, signer);
+    tx = await token.transfer(quote.recipient, amount);
+  }
   console.error("Submitted tx", tx.hash);
   const receipt = await tx.wait();
   if (!receipt || receipt.status !== 1) {

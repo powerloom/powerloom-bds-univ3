@@ -2,6 +2,7 @@
 
 | Symptom | Cause | Fix |
 |---------|--------|-----|
+| Pay-signup "recipient did not match" / wrong first tx (POWER 7869) | **`signup-pay.mjs` used ERC-20** while plan is **`payment_kind: native_value`** (CGT) | **Update** the script from the current skill repo, or use a flow that checks **`quote.payment_kind`**: native = `sendTransaction({ to, value })` only, not `token.transfer`. `credits-topup.mjs` already branches on `payment_kind`. |
 | HTTP 401 | Bad or missing API key | Re-copy key from the metering dashboard ([bds-metering.powerloom.io/metering](https://bds-metering.powerloom.io/metering)) or your CLI profile; fix `POWERLOOM_API_KEY`. |
 | HTTP 402 | Credits exhausted | Top up; reduce recipe cadence; run `ensure-credits.mjs` before crons. |
 | HTTP 429 | Rate limit | Increase heartbeat interval; for **cron** schedules prefer **poll** (fewer parallel calls) instead of many snapshot fan-outs. |

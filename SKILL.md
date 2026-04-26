@@ -7,7 +7,7 @@ description: |
   Token-Flow, and Autonomous DeFi Analyst recipes. Billing: metering service HTTP APIs; optional bds-agent CLI. Agent-first: plan + wallet then pay-signup, then top-up.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
-version: 0.0.4
+version: 0.0.5
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
@@ -84,7 +84,7 @@ metadata:
 
 | Script | What it does |
 |--------|----------------|
-| `node scripts/signup-pay.mjs` | **New** key: pay-signup (quote → **ERC-20** pay → claim). `POWERLOOM_API_KEY` not set yet. |
+| `node scripts/signup-pay.mjs` | **New** key: pay-signup (quote → on-chain pay → claim). Uses **`quote.payment_kind`**: `native_value` = send **native/CGT** (`tx.value` to `recipient`); `erc20` = token **`transfer`**. For **POWER (7869) CGT** plans, this must be **native** — do not run the ERC-20 path. |
 | `node scripts/credits-topup.mjs` | **More** credits: uses existing **`POWERLOOM_API_KEY`**, fetches `GET /credits/plans`, matches **`PLAN_ID` + `EVM_CHAIN_ID` + `TOKEN_SYMBOL`**, sends **ERC-20** or **native** per `payment_kind`, then **`POST /credits/topup`**. Set **`EVM_RPC_URL`** when **`chains[].rpc_url`** is empty or you need a specific node (the API never exposes the server’s private RPC). |
 | `node scripts/ensure-credits.mjs` | **Balance** only (`GET /credits/balance`); no purchase. |
 
