@@ -50,13 +50,22 @@ Constraints:
 
 ---
 
+## Verification provenance (cron script + one-shot)
+
+**In `scripts/whale-cron.mjs` (already implemented):** each `bds_mpp_snapshot_allTrades` result carries `data.verification` (`cid`, `epochId`, `projectId`). The script reads that object once per poll and appends a **“Verified on-chain”** block (CID, epoch, project) to each formatted alert in `formatAlert` — it is not optional glue you add in the OpenClaw message; the one-shot above assumes this behavior.
+
+**Independent check:** the MCP tool `verify_data_provenance` can confirm commitments using the same `cid` / `epoch_id` / `project_id` — see **`references/03-verification.md`** and the **Verify** row in `SKILL.md` (data table).
+
+---
+
 ## Related files in this skill
 
 | Item | Location |
 |------|----------|
-| Cron entrypoint | `scripts/whale-cron.mjs` |
+| Cron entrypoint (incl. verification in alerts) | `scripts/whale-cron.mjs` |
 | Pay-signup | `scripts/signup-pay.mjs` |
 | MCP + trade helpers | `lib/mcp.mjs`, `lib/trade-utils.mjs`, `lib/state.mjs` |
+| On-chain verification details | `references/03-verification.md` |
 | Integrator rules | `SKILL.md` → **Hosts & integrators** |
 
 See also `references/01-quickstart.md` and `references/06-troubleshooting.md`.

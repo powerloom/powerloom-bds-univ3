@@ -7,7 +7,7 @@ description: |
   Token-Flow, and Autonomous DeFi Analyst recipes. Billing: metering service HTTP APIs; optional bds-agent CLI. Agent-first: plan + wallet then pay-signup, then top-up.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
-version: 0.0.6
+version: 0.0.8
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
@@ -119,7 +119,7 @@ Pre-built scripts + `recipes/*.yaml` defaults — prefer these over ad-hoc scrip
 | Recipe / entrypoint | Script |
 |---------------------|--------|
 | Whale Radar (stream / per-pool poll) | `node scripts/whale-radar.mjs` — default **stream = all pools**; `--mode poll` uses `poll_fallback_pools` (per-pool snapshot), not `snapshot_allTrades` |
-| Whale alerts (cron, all pools) | `node scripts/whale-cron.mjs` — **bounded** one-shot: `bds_mpp_snapshot_allTrades` + pool metadata; preferred for **OpenClaw / crontab** |
+| Whale alerts (cron, all pools) | `node scripts/whale-cron.mjs` — **bounded** one-shot: `bds_mpp_snapshot_allTrades` + pool metadata; alerts include **snapshot** `cid` / epoch / project from `data.verification` — see **Verification provenance** in `references/08-openclaw-one-shot.md` |
 | Token-Flow | `node scripts/token-flow.mjs` (`--token 0x...`) |
 | DeFi Analyst | `node scripts/defi-analyst.mjs` — default **multi-pool** (`bds_mpp_stream_allTrades` + all-pools volume); `filters.scope: single_pool` for one-pool only (`--once` = one shot) |
 
