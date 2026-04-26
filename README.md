@@ -6,13 +6,15 @@ Every data point this skill fetches is finalized onchain by Powerloom's decentra
 
 ## Recipes
 
-- **Whale Radar** — USD-threshold alerts via **`bds_mpp_stream_allTrades`** (all indexed pools); recipe `poll_fallback_pools` is for **`--mode poll`** only.
+- **Whale Radar** — USD-threshold alerts: long-running default **`bds_mpp_stream_allTrades`**; **`--mode poll`** + `poll_fallback_pools` = per-pool polls only. For **cron / OpenClaw heartbeats** over all pools, use **`node scripts/whale-cron.mjs`** (bounded `bds_mpp_snapshot_allTrades` + pool metadata).
 - **Token-Flow** — all swaps touching a configured token (default USDC) across pools derived at runtime.
 - **Autonomous DeFi Analyst** — default **multi-pool** stream batch + all-pools token volume; set **`filters.scope: single_pool`** in `recipes/defi-analyst.yaml` for legacy single-pool snapshots only.
 
 ## Integrators (OpenClaw, cron)
 
-For **scheduled heartbeats**, prefer **poll** mode and snapshot MCP tools — not stream tools. Streams suit **long-running background** services; see **Hosts & integrators** in `SKILL.md`.
+**End-to-end one-shot** (install, signup, env, `whale-cron` job): **`references/08-openclaw-one-shot.md`**.
+
+For **scheduled heartbeats**, prefer **`whale-cron.mjs`** or snapshot MCP tools — not stream tools. Streams suit **long-running background** services; see **Hosts & integrators** in `SKILL.md`.
 
 ## Setup
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * Whale Radar — default: stream via bds_mpp_stream_allTrades; fallback: --mode poll
+ * Whale Radar — long-running: default **stream** (`bds_mpp_stream_allTrades`); or `--mode poll` for a
+ * fixed list of pools via `bds_mpp_snapshot_trades_pool_address` (see recipe yaml).
+ * For **scheduled / one-shot** runs over **all** pools, use `scripts/whale-cron.mjs` (snapshot all-trades, bounded loops).
  */
 
 import { callTool } from "./lib/mcp.mjs";

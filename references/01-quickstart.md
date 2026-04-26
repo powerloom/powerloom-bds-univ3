@@ -4,9 +4,10 @@
 2. **Export** `POWERLOOM_API_KEY=sk_live_...` in the environment OpenClaw uses (or your shell profile).
 3. **Optional** — default MCP URL is `https://bds-mcp.powerloom.io/sse`. Override with `POWERLOOM_MCP_URL` if directed.
 4. **Check credits**: `node scripts/ensure-credits.mjs` — should print balance JSON and exit 0.
-5. **OpenClaw / cron integrators** — for scheduled heartbeats, prefer **`--mode poll`** or `heartbeat.mode: poll` in yaml (snapshot tools per tick). Use stream tools only for explicit long-running services, not default cron glue — see **Hosts & integrators** in `SKILL.md`.
+5. **OpenClaw / cron** — for **one-shot schedulers** (recommended), use **`node scripts/whale-cron.mjs`** and the full copy-paste flow in **`references/08-openclaw-one-shot.md`**. For interactive stream or per-pool poll daemons, see **Hosts & integrators** in `SKILL.md` (`whale-radar.mjs`).
 6. **Run a recipe** (stdout first):
-   - Whale Radar: `node scripts/whale-radar.mjs`
+   - Whale cron (bounded, all pools): `node scripts/whale-cron.mjs`
+   - Whale Radar (stream / yaml poll): `node scripts/whale-radar.mjs`
    - Token-Flow: `node scripts/token-flow.mjs`
    - DeFi Analyst (one shot): `node scripts/defi-analyst.mjs --once`
 7. **Telegram** — set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, set `dispatch.channel` to `telegram` in the recipe yaml.
