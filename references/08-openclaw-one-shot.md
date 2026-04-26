@@ -40,6 +40,7 @@ Then set up pay-signup and a whale radar cron. Details:
    - Telegram: read `botToken` from OpenClaw `channels.telegram` / config; chat id from user or config.
 6. Before the first run: `rm -f .powerloom/whale-cron-state.json` if you need a clean epoch cursor.
    Keep `.powerloom/pool-metadata-cache.json` across reinstalls unless debugging metadata.
+7. Set WHALE_CRON_STATE_FILE and WHALE_CRON_POOL_CACHE to paths outside the skill directory (e.g. in the workspace root) so they survive openclaw skills install --force.
 
 Constraints:
 - Do NOT use `bds_mpp_stream_allTrades` for this cron — use `bds_mpp_snapshot_allTrades` only.
