@@ -1,7 +1,9 @@
+import { powerloomApiKey, mcpDebugEnabled } from "./powerloom-env.mjs";
+
 /**
  * Powerloom BDS MCP over HTTP+SSE (same wire as Claude / OpenClaw remote MCP).
- * Env: POWERLOOM_API_KEY (required), POWERLOOM_MCP_URL or BDS_MCP_URL (default https://bds-mcp.powerloom.io/sse),
- * BDS_MCP_CALL_TIMEOUT_MS (default 60000; raise for bds_mpp_stream_allTrades with max_events=50).
+ * Env: POWERLOOM_API_KEY (required), POWERLOOM_MCP_URL (default https://bds-mcp.powerloom.io/sse),
+ * POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS (default 60000; raise for bds_mpp_stream_allTrades with max_events=50).
  *
  * Naming (do not confuse):
  * - **ClawHub skill slug:** `powerloom-bds-univ3` (folder + SKILL.md) — not an MCP tool.
@@ -10,16 +12,13 @@
  */
 
 export function getMcpSseUrl() {
-  const raw =
-    process.env.POWERLOOM_MCP_URL ||
-    process.env.BDS_MCP_URL ||
-    "https://bds-mcp.powerloom.io/sse";
+  const raw = process.env.POWERLOOM_MCP_URL || "https://bds-mcp.powerloom.io/sse";
   const trimmed = raw.replace(/\/$/, "");
   return trimmed.endsWith("/sse") ? trimmed : `${trimmed}/sse`;
 }
 
 export function getCallTimeoutMs() {
-  const n = Number(process.env.BDS_MCP_CALL_TIMEOUT_MS);
+  const n = Number((process.env.POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS || "").trim());
   return Number.isFinite(n) && n > 0 ? n : 60000;
 }
 
@@ -71,7 +70,7 @@ async function connectMcpSession(apiKey) {
     clearTimeout(timer);
     if (e.name === "AbortError") {
       const err = new Error(
-        `MCP SSE connection timed out after ${timeoutMs}ms (BDS_MCP_CALL_TIMEOUT_MS).`
+        `MCP SSE connection timed out after ${timeoutMs}ms (POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS).`
       );
       err.code = "TIMEOUT";
       throw err;
@@ -131,13 +130,12 @@ async function connectMcpSession(apiKey) {
   if (!sessionId) {
     clearTimeout(timer);
     await reader.cancel().catch(() => {});
-    const hint =
-      process.env.BDS_MCP_DEBUG === "1"
+    const hint = mcpDebugEnabled()
         ? ` First bytes (debug): ${buf.slice(0, 800).replace(/\s+/g, " ")}`
         : "";
     const err = new Error(
       "MCP session_id never arrived on SSE — check POWERLOOM_MCP_URL, Authorization, and proxy. " +
-        "If the server emits a non-URL session line, set BDS_MCP_DEBUG=1 and inspect hint in this message." +
+        "If the server emits a non-URL session line, set POWERLOOM_BDS_MCP_DEBUG=1 and inspect hint in this message." +
         hint
     );
     err.code = "NO_SESSION";
@@ -247,8 +245,8 @@ async function readJsonRpcById(reader, decoder, bufRef, expectedId, timeoutMs) {
  * Use this to prove which `bds_mpp_*` names the endpoint exposes — not guess `bds_univ3`.
  */
 export async function listMcpTools() {
-  const apiKey = process.env.POWERLOOM_API_KEY;
-  if (!apiKey || !String(apiKey).trim()) {
+  const apiKey = powerloomApiKey();
+  if (!apiKey) {
     const err = new Error(
       "POWERLOOM_API_KEY is not set. Sign up at https://bds-metering.powerloom.io (CLI) or https://bds-metering.powerloom.io/metering (browser) and export your API key."
     );
@@ -271,7 +269,7 @@ export async function listMcpTools() {
     );
     if (!result) {
       const err = new Error(
-        "tools/list timed out — no JSON-RPC response with id 2 (check BDS_MCP_CALL_TIMEOUT_MS)."
+        "tools/list timed out — no JSON-RPC response with id 2 (check POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS)."
       );
       err.code = "TOOLS_LIST_TIMEOUT";
       throw err;
@@ -293,8 +291,8 @@ export async function listMcpTools() {
  * One MCP tools/call round-trip. Returns parsed JSON from tool result text (object).
  */
 export async function callTool(toolName, params = {}) {
-  const apiKey = process.env.POWERLOOM_API_KEY;
-  if (!apiKey || !String(apiKey).trim()) {
+  const apiKey = powerloomApiKey();
+  if (!apiKey) {
     const err = new Error(
       "POWERLOOM_API_KEY is not set. Sign up at https://bds-metering.powerloom.io (CLI) or https://bds-metering.powerloom.io/metering (browser) and export your API key."
     );

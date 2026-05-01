@@ -1,3 +1,9 @@
+import {
+  telegramBotToken,
+  telegramChatId,
+  discordWebhookUrl,
+} from "./powerloom-env.mjs";
+
 /**
  * Dispatch alert lines to Telegram, Discord webhook, or stdout.
  */
@@ -7,8 +13,8 @@ export async function dispatchLines(lines, channel) {
   if (!text) return;
 
   if (channel === "telegram") {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
-    const chat = process.env.TELEGRAM_CHAT_ID;
+    const token = telegramBotToken();
+    const chat = telegramChatId();
     if (!token || !chat) {
       console.log(text);
       return;
@@ -28,7 +34,7 @@ export async function dispatchLines(lines, channel) {
   }
 
   if (channel === "discord") {
-    const url = process.env.DISCORD_WEBHOOK_URL;
+    const url = discordWebhookUrl();
     if (!url) {
       console.log(text);
       return;

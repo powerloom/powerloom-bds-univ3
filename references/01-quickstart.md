@@ -10,4 +10,4 @@
    - Whale Radar (stream / yaml poll): `node scripts/whale-radar.mjs`
    - Token-Flow: `node scripts/token-flow.mjs`
    - DeFi Analyst (one shot): `node scripts/defi-analyst.mjs --once`
-7. **Telegram** — set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, set `dispatch.channel` to `telegram` in the recipe yaml.
+7. **Telegram** — set `POWERLOOM_TELEGRAM_BOT_TOKEN` and `POWERLOOM_TELEGRAM_CHAT_ID`, set `dispatch.channel` to `telegram` in the recipe yaml.

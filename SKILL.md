@@ -1,13 +1,16 @@
 ---
 name: powerloom-bds-univ3
 description: |
-  Autonomous Uniswap V3 monitoring on consensus-backed data. Every data point is
-  finalized on-chain by Powerloom's decentralized sequencer-validator network (DSV)
+  Autonomous Uniswap V3 monitoring on consensus-backed data with on-chain payment requirements.
+  Every data point is finalized on-chain by Powerloom's decentralized sequencer-validator network (DSV)
   and independently verifiable via verify_data_provenance. Ships with Whale Radar,
-  Token-Flow, and Autonomous DeFi Analyst recipes. Billing: metering service HTTP APIs; optional bds-agent CLI. Agent-first: plan + wallet then pay-signup, then top-up.
+  Token-Flow, and Autonomous DeFi Analyst recipes.
+  **IMPORTANT: This skill requires an EVM private key to purchase API credits via on-chain payments** —
+  users must complete a pay-signup flow (plan selection → on-chain payment → API key claim) before accessing data.
+  Billing: metering service HTTP APIs; optional bds-agent CLI. Agent-first: plan + wallet then pay-signup, then top-up.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
-version: 0.0.8
+version: 0.0.9
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
@@ -24,26 +27,29 @@ metadata:
     requires:
       bins: ["node"]
       env:
-        - EVM_PRIVATE_KEY
-        - EVM_RPC_URL
-        - EVM_CHAIN_ID
-        - PLAN_ID
-        - TOKEN_SYMBOL
+        - POWERLOOM_EVM_PRIVATE_KEY
+        - POWERLOOM_EVM_RPC_URL
+        - POWERLOOM_EVM_CHAIN_ID
+        - POWERLOOM_PLAN_ID
+        - POWERLOOM_TOKEN_SYMBOL
         - POWERLOOM_API_KEY
       optional_env:
         - POWERLOOM_MCP_URL
-        - TELEGRAM_BOT_TOKEN
-        - TELEGRAM_CHAT_ID
-        - DISCORD_WEBHOOK_URL
-        - BDS_MCP_CALL_TIMEOUT_MS
-        - METERING_BASE_URL
-        - AGENT_NAME
-        - EMAIL
+        - POWERLOOM_TELEGRAM_BOT_TOKEN
+        - POWERLOOM_TELEGRAM_CHAT_ID
+        - POWERLOOM_DISCORD_WEBHOOK_URL
+        - POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS
+        - POWERLOOM_BDS_MCP_DEBUG
+        - POWERLOOM_METERING_BASE_URL
+        - POWERLOOM_AGENT_NAME
+        - POWERLOOM_EMAIL
 ---
 
 # Powerloom BDS — Uniswap V3
 
 ## Install
+
+> **⚠️ WARNING: This skill requires an EVM private key for on-chain payments to purchase API credits. We strongly recommend using a burner wallet with limited funds dedicated to this purpose. Never use a wallet holding significant assets or with extensive transaction history for agentic setups.**
 
 **Contract:** [bds-agenthub-billing-metering](https://github.com/powerloom/bds-agenthub-billing-metering). **ClawHub** users only need a **single origin** (default [bds-metering.powerloom.io](https://bds-metering.powerloom.io))— **`bds-agent` commands are optional**; they are a reference CLI for the same JSON bodies you can send with `curl` + a wallet or `ethers`.
 
@@ -51,23 +57,23 @@ metadata:
 
 | What | How |
 |------|-----|
-| List SKUs | `GET {BASE}/credits/plans` — no auth. Choose a plan row: `id`, `chain_id`, `token_symbol` (and note `payment_kind`: ERC-20 vs native / CGT). **`chains[].rpc_url`** is a **public** JSON-RPC hint only when the metering deployment sets it; it may be **empty** — use **`EVM_RPC_URL`** for wallet / script calls in that case. |
+| List SKUs | `GET {BASE}/credits/plans` — no auth. Choose a plan row: `id`, `chain_id`, `token_symbol` (and note `payment_kind`: ERC-20 vs native / CGT). **`chains[].rpc_url`** is a **public** JSON-RPC hint only when the metering deployment sets it; it may be **empty** — use **`POWERLOOM_EVM_RPC_URL`** for wallet / script calls in that case. |
 | New key, wallet-only | **Pay-signup:** `POST {BASE}/signup/pay/quote` → pay on chain → `POST {BASE}/signup/pay/claim` with `signup_nonce` + `tx_hash`. Returns `api_key`. |
 | New key, browser | Human device flow on `{BASE}/metering` (same service). |
 | More credits, existing key | `POST {BASE}/credits/topup` with `Authorization: Bearer sk_live_…` and tx / plan (not the pay-signup endpoints). |
 | Check balance | `GET {BASE}/credits/balance` with `Authorization: Bearer …` |
 
-`{BASE}` is **`METERING_BASE_URL`**, e.g. `https://bds-metering.powerloom.io`. Set **`POWERLOOM_API_KEY`** to the `sk_live_...` you get after pay-signup, device signup, or copy from the dashboard.
+`{BASE}` is **`POWERLOOM_METERING_BASE_URL`**, e.g. `https://bds-metering.powerloom.io`. Set **`POWERLOOM_API_KEY`** to the `sk_live_...` you get after pay-signup, device signup, or copy from the dashboard.
 
 ### OpenClaw `requires.env` (mirrors a pay-signup row + wallet + key)
 
 | Field | Role |
 |-------|------|
-| `EVM_PRIVATE_KEY` | Payer wallet |
-| `EVM_RPC_URL` | JSON-RPC for that chain |
-| `EVM_CHAIN_ID` | Must match the plan’s `chain_id` |
-| `PLAN_ID` | e.g. `launch_10_pl_power_cgt` from `GET /credits/plans` |
-| `TOKEN_SYMBOL` | e.g. `POWER` (must match that row) |
+| `POWERLOOM_EVM_PRIVATE_KEY` | Payer wallet — **use a burner wallet** |
+| `POWERLOOM_EVM_RPC_URL` | JSON-RPC for that chain |
+| `POWERLOOM_EVM_CHAIN_ID` | Must match the plan's `chain_id` |
+| `POWERLOOM_PLAN_ID` | e.g. `launch_10_pl_power_cgt` from `GET /credits/plans` |
+| `POWERLOOM_TOKEN_SYMBOL` | e.g. `POWER` (must match that row) |
 | `POWERLOOM_API_KEY` | After claim (or set after device signup) |
 
 **Path A (browser) only** usually needs `POWERLOOM_API_KEY` in practice. If the host enforces the full list, set wallet + plan to the row you will use, or adjust host policy.
@@ -85,12 +91,12 @@ metadata:
 | Script | What it does |
 |--------|----------------|
 | `node scripts/signup-pay.mjs` | **New** key: pay-signup (quote → on-chain pay → claim). Uses **`quote.payment_kind`**: `native_value` = send **native/CGT** (`tx.value` to `recipient`); `erc20` = token **`transfer`**. For **POWER (7869) CGT** plans, this must be **native** — do not run the ERC-20 path. |
-| `node scripts/credits-topup.mjs` | **More** credits: uses existing **`POWERLOOM_API_KEY`**, fetches `GET /credits/plans`, matches **`PLAN_ID` + `EVM_CHAIN_ID` + `TOKEN_SYMBOL`**, sends **ERC-20** or **native** per `payment_kind`, then **`POST /credits/topup`**. Set **`EVM_RPC_URL`** when **`chains[].rpc_url`** is empty or you need a specific node (the API never exposes the server’s private RPC). |
+| `node scripts/credits-topup.mjs` | **More** credits: uses existing **`POWERLOOM_API_KEY`**, fetches `GET /credits/plans`, matches **`POWERLOOM_PLAN_ID` + `POWERLOOM_EVM_CHAIN_ID` + `POWERLOOM_TOKEN_SYMBOL`**, sends **ERC-20** or **native** per `payment_kind`, then **`POST /credits/topup`**. Set **`POWERLOOM_EVM_RPC_URL`** when **`chains[].rpc_url`** is empty or you need a specific node (the API never exposes the server's private RPC). |
 | `node scripts/ensure-credits.mjs` | **Balance** only (`GET /credits/balance`); no purchase. |
 
 `npm install` once (adds `ethers`).
 
-**Optional env (signup script):** `METERING_BASE_URL`, `AGENT_NAME`, `EMAIL` (see [metering README](https://github.com/powerloom/bds-agenthub-billing-metering#readme)).
+**Optional env (signup script):** `POWERLOOM_METERING_BASE_URL`, `POWERLOOM_AGENT_NAME`, `POWERLOOM_EMAIL` (see [metering README](https://github.com/powerloom/bds-agenthub-billing-metering#readme)).
 
 ### After you have a key — more credits (top-up)
 
@@ -110,7 +116,7 @@ Generic tool runner: `node scripts/powerloom-mcp-client.mjs <tool_name> '{}'`
 | **Streaming** live | `bds_mpp_stream_allTrades` with `from_epoch` checkpoint (see `scripts/whale-radar.mjs`) |
 | **Verify** on-chain | `verify_data_provenance` with `cid`, `epoch_id`, `project_id` from API — never substitute block for epoch |
 
-**Timeouts:** default `BDS_MCP_CALL_TIMEOUT_MS=60000`. Use **120000** for `bds_mpp_stream_allTrades` with `max_events=50` if you see timeouts under backlog.
+**Timeouts:** default `POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS=60000`. Use **120000** for `bds_mpp_stream_allTrades` with `max_events=50` if you see timeouts under backlog.
 
 ## Recipes (supported surface)
 
@@ -125,15 +131,15 @@ Pre-built scripts + `recipes/*.yaml` defaults — prefer these over ad-hoc scrip
 
 ## Model guidance
 
-Recipes produce the same stdout/Telegram output regardless of model. Ad-hoc “compose your own” prompts work best on GPT-4–class or GLM-5+; weaker local models may collapse multi-pool prompts onto one pool — **use the Token-Flow recipe** instead.
+Recipes produce the same stdout/Telegram output regardless of model. Ad-hoc "compose your own" prompts work best on GPT-4–class or GLM-5+; weaker local models may collapse multi-pool prompts onto one pool — **use the Token-Flow recipe** instead.
 
 ## Hosts & integrators (OpenClaw, cron, heartbeats)
 
-**OpenClaw “one shot” setup (install → pay-signup → cron message):** use the copy-paste prompt in **`references/08-openclaw-one-shot.md`** so agents get a single, repeatable instruction block without hunting daily notes.
+**OpenClaw "one shot" setup (install → pay-signup → cron message):** use the copy-paste prompt in **`references/08-openclaw-one-shot.md`** so agents get a single, repeatable instruction block without hunting daily notes.
 
 **Scheduled / cron-style runs** (short heartbeat, one shot per tick): use **`node scripts/whale-cron.mjs`** (all-pool `bds_mpp_snapshot_allTrades`, exits after `MAX_LOOPS`) or, for a **fixed** pool set only, `bds_mpp_snapshot_trades_pool_address` / `whale-radar.mjs --mode poll`. **Do not** use `whale-radar` default **stream** for crons. Each one-shot run stays a **bounded** call; easier on credits and timeouts.
 
-**Stream tools** (`bds_mpp_stream_allTrades`, SSE catalog routes): use only when the **end user** wants a **long-running background** data consumer, deployed **outside** a typical cron “wake up → one batch → exit” model. **Do not** default generated skill glue to streams for cron: streams open a different metering/session pattern and are a poor fit for start-stop heartbeats. This repo’s recipes still **default to stream** for interactive demos; integrators should override to **poll** in `recipes/*.yaml` or script flags for production crons.
+**Stream tools** (`bds_mpp_stream_allTrades`, SSE catalog routes): use only when the **end user** wants a **long-running background** data consumer, deployed **outside** a typical cron "wake up → one batch → exit" model. **Do not** default generated skill glue to streams for cron: streams open a different metering/session pattern and are a poor fit for start-stop heartbeats. This repo's recipes still **default to stream** for interactive demos; integrators should override to **poll** in `recipes/*.yaml` or script flags for production crons.
 
 ## References
 

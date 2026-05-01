@@ -17,8 +17,8 @@ Then set up pay-signup and a whale radar cron. Details:
    `signup-pay.mjs` uses `quote.payment_kind`: `native_value` → `sendTransaction({ value })`; `erc20` → `token.transfer()`.
 3. After signup, set the `sk_live_...` API key and all six env vars in OpenClaw under
    `skills.entries.powerloom-bds-univ3.env.*`:
-   `EVM_PRIVATE_KEY`, `EVM_RPC_URL`, `EVM_CHAIN_ID`, `PLAN_ID`, `TOKEN_SYMBOL`, `POWERLOOM_API_KEY`.
-   If the schema expects strings, pass `EVM_CHAIN_ID` as a quoted string (e.g. `"7869"`).
+   `POWERLOOM_EVM_PRIVATE_KEY`, `POWERLOOM_EVM_RPC_URL`, `POWERLOOM_EVM_CHAIN_ID`, `POWERLOOM_PLAN_ID`, `POWERLOOM_TOKEN_SYMBOL`, `POWERLOOM_API_KEY`.
+   If the schema expects strings, pass `POWERLOOM_EVM_CHAIN_ID` as a quoted string (e.g. `"7869"`).
 4. `scripts/whale-cron.mjs` should:
    - Use `lib/mcp.mjs` `callTool()` for all MCP calls (SSE handshake, not raw HTTP).
    - Use `lib/trade-utils.mjs` `flattenAllTradesFromSnapshot()` to parse the snapshot.
@@ -35,7 +35,7 @@ Then set up pay-signup and a whale radar cron. Details:
    - Session: isolated (`--session isolated`)
    - Flags: `--no-deliver`, `--light-context`
    - Message: a shell command that `cd`s to the skill dir, sets env inline
-     (`POWERLOOM_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `BDS_MCP_CALL_TIMEOUT_MS=120000`,
+     (`POWERLOOM_API_KEY`, `POWERLOOM_TELEGRAM_BOT_TOKEN`, `POWERLOOM_TELEGRAM_CHAT_ID`, `POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS=120000`,
      `WHALE_CRON_THRESHOLD=10000`), then runs `node scripts/whale-cron.mjs`.
    - Telegram: read `botToken` from OpenClaw `channels.telegram` / config; chat id from user or config.
 6. Before the first run: `rm -f .powerloom/whale-cron-state.json` if you need a clean epoch cursor.

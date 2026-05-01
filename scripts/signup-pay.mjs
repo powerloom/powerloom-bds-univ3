@@ -4,19 +4,17 @@
  * Uses quote.payment_kind: **erc20** = ERC-20 transfer; **native_value** = native/CGT value
  * send to recipient (e.g. POWER on chain 7869). Must match the plan (see GET /credits/plans).
  *
- * Required env:
- *   EVM_PRIVATE_KEY   — hex, optionally 0x-prefixed (funds the transfer; becomes the account’s payer address)
- *   PLAN_ID           — plan id from GET /credits/plans
- *   CHAIN_ID          — EIP-155 chain id (must match the plan row)
- *   EVM_CHAIN_ID      — same as CHAIN_ID (optional alias; used by bds-agent profile `.evm.env`)
- *   TOKEN_SYMBOL      — must match plan.token_symbol for that chain
+ * Required env (POWERLOOM_* only):
+ *   POWERLOOM_EVM_PRIVATE_KEY — hex, optionally 0x-prefixed (funds the transfer)
+ *   POWERLOOM_PLAN_ID — plan id from GET /credits/plans
+ *   POWERLOOM_EVM_CHAIN_ID — EIP-155 chain id (must match the plan row)
+ *   POWERLOOM_TOKEN_SYMBOL — must match plan.token_symbol for that chain
  *
  * Optional:
- *   METERING_BASE_URL — default https://bds-metering.powerloom.io
- *   EVM_RPC_URL       — if unset, uses rpc_hint from the quote (public RPC from metering;
- *                       may be null if no public hint — then set this)
- *   AGENT_NAME        — default openclaw-pay-agent
- *   EMAIL             — if set, must not already be registered
+ *   POWERLOOM_METERING_BASE_URL — default https://bds-metering.powerloom.io
+ *   POWERLOOM_EVM_RPC_URL — if unset, uses rpc_hint from the quote
+ *   POWERLOOM_AGENT_NAME — default openclaw-pay-agent
+ *   POWERLOOM_EMAIL — if set, must not already be registered
  *
  * On success, prints JSON with api_key — set POWERLOOM_API_KEY from the output.
  *
@@ -25,36 +23,45 @@
  */
 
 import { ethers } from "ethers";
+import {
+  meteringBaseUrl,
+  evmPrivateKey,
+  evmRpcUrl,
+  planId,
+  chainIdParsed,
+  tokenSymbol,
+  agentNameOr,
+  signupEmail,
+} from "./lib/powerloom-env.mjs";
 
 const ERC20_ABI = ["function transfer(address to, uint256 amount) returns (bool)"];
 
 async function main() {
-  const base = (process.env.METERING_BASE_URL || "https://bds-metering.powerloom.io").replace(
-    /\/$/,
-    "",
-  );
-  const pk = (process.env.EVM_PRIVATE_KEY || "").trim();
-  const planId = (process.env.PLAN_ID || "").trim();
-  const chainId = parseInt(process.env.CHAIN_ID || process.env.EVM_CHAIN_ID || "", 10);
-  const tokenSymbol = (process.env.TOKEN_SYMBOL || "").trim();
-  const agentName = (process.env.AGENT_NAME || "openclaw-pay-agent").trim();
-  const emailRaw = (process.env.EMAIL || "").trim();
+  const base = meteringBaseUrl();
+  const pk = evmPrivateKey();
+  const pid = planId();
+  const chainId = chainIdParsed();
+  const sym = tokenSymbol();
+  const agentName = agentNameOr("openclaw-pay-agent");
+  const emailRaw = signupEmail();
 
   if (!pk) {
-    console.error("Set EVM_PRIVATE_KEY");
+    console.error("Set POWERLOOM_EVM_PRIVATE_KEY");
     process.exit(1);
   }
-  if (!planId || !Number.isFinite(chainId) || !tokenSymbol) {
-    console.error("Set PLAN_ID, CHAIN_ID, and TOKEN_SYMBOL (see GET /credits/plans on the metering origin).");
+  if (!pid || !Number.isFinite(chainId) || !sym) {
+    console.error(
+      "Set POWERLOOM_PLAN_ID, POWERLOOM_EVM_CHAIN_ID, and POWERLOOM_TOKEN_SYMBOL (see GET /credits/plans).",
+    );
     process.exit(1);
   }
 
   const wallet = new ethers.Wallet(pk.startsWith("0x") ? pk : `0x${pk}`);
   const quoteBody = {
     agent_name: agentName,
-    plan_id: planId,
+    plan_id: pid,
     chain_id: chainId,
-    token_symbol: tokenSymbol,
+    token_symbol: sym,
     payer_address: wallet.address,
   };
   if (emailRaw) {
@@ -79,10 +86,10 @@ async function main() {
     process.exit(1);
   }
 
-  const rpcUrl = (process.env.EVM_RPC_URL || "").trim() || quote.rpc_hint;
+  const rpcUrl = evmRpcUrl() || quote.rpc_hint;
   if (!rpcUrl) {
     console.error(
-      "No RPC: set EVM_RPC_URL (quote.rpc_hint is null when metering has no public_rpc_url for that chain).",
+      "No RPC: set POWERLOOM_EVM_RPC_URL (quote.rpc_hint is null when metering has no public_rpc_url for that chain).",
     );
     process.exit(1);
   }
@@ -91,7 +98,7 @@ async function main() {
   const net = await provider.getNetwork();
   if (Number(net.chainId) !== Number(quote.chain_id)) {
     console.error(
-      `RPC chainId ${net.chainId} does not match quote.chain_id ${quote.chain_id}. Fix EVM_RPC_URL.`,
+      `RPC chainId ${net.chainId} does not match quote.chain_id ${quote.chain_id}. Fix POWERLOOM_EVM_RPC_URL.`,
     );
     process.exit(1);
   }

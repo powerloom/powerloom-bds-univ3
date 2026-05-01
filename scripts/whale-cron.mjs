@@ -8,6 +8,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { callTool } from "./lib/mcp.mjs";
+import { defaultMcpCallTimeoutIfUnset, telegramBotToken, telegramChatId } from "./lib/powerloom-env.mjs";
 import { loadState, saveState, fingerprintTrade, rememberFingerprint, wasEmitted } from "./lib/state.mjs";
 import { flattenAllTradesFromSnapshot, tradeUsd, tradeDirectionLabel } from "./lib/trade-utils.mjs";
 
@@ -15,10 +16,10 @@ const THRESHOLD = parseFloat(process.env.WHALE_CRON_THRESHOLD || "10000");
 const MAX_LOOPS = parseInt(process.env.WHALE_CRON_MAX_LOOPS || "10", 10);
 const STATE_FILE = process.env.WHALE_CRON_STATE_FILE || ".powerloom/whale-cron-state.json";
 const POOL_CACHE_FILE = process.env.WHALE_CRON_POOL_CACHE || ".powerloom/pool-metadata-cache.json";
-process.env.BDS_MCP_CALL_TIMEOUT_MS = process.env.BDS_MCP_CALL_TIMEOUT_MS || "120000";
+defaultMcpCallTimeoutIfUnset(120000);
 
-const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
-const TG_CHAT = process.env.TELEGRAM_CHAT_ID || "";
+const TG_TOKEN = telegramBotToken();
+const TG_CHAT = telegramChatId();
 
 // ─── Pool metadata cache ───
 

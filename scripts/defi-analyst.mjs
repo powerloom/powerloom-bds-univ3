@@ -9,6 +9,7 @@ import { loadRecipe } from "./lib/recipe-config.mjs";
 import { tradeUsd, flattenAllTradesFromSnapshot } from "./lib/trade-utils.mjs";
 import { loadState, saveState } from "./lib/state.mjs";
 import { dispatchLines } from "./lib/dispatch.mjs";
+import { defaultMcpCallTimeoutIfUnset } from "./lib/powerloom-env.mjs";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 
@@ -76,9 +77,7 @@ function tradeDirection(t) {
 }
 
 async function oneRoundMulti() {
-  process.env.BDS_MCP_CALL_TIMEOUT_MS =
-    process.env.BDS_MCP_CALL_TIMEOUT_MS ||
-    String(cfg.client?.call_timeout_ms || 90000);
+  defaultMcpCallTimeoutIfUnset(cfg.client?.call_timeout_ms || 90000);
 
   let vol;
   try {
@@ -182,8 +181,7 @@ async function oneRoundMulti() {
 }
 
 async function oneRoundSinglePool() {
-  process.env.BDS_MCP_CALL_TIMEOUT_MS =
-    process.env.BDS_MCP_CALL_TIMEOUT_MS || "90000";
+  defaultMcpCallTimeoutIfUnset(90000);
 
   const vol = await callTool("bds_mpp_tradeVolume_pool_address_time_interval", {
     pool_address: pool,

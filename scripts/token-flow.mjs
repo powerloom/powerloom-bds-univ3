@@ -20,6 +20,7 @@ import {
   wasEmitted,
 } from "./lib/state.mjs";
 import { dispatchLines } from "./lib/dispatch.mjs";
+import { defaultMcpCallTimeoutIfUnset } from "./lib/powerloom-env.mjs";
 
 const USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 
@@ -113,8 +114,7 @@ async function runStream() {
     process.exit(2);
   }
   let state = loadState(stateFile);
-  process.env.BDS_MCP_CALL_TIMEOUT_MS =
-    process.env.BDS_MCP_CALL_TIMEOUT_MS || String(cfg.client?.call_timeout_ms || 120000);
+  defaultMcpCallTimeoutIfUnset(cfg.client?.call_timeout_ms || 120000);
 
   for (;;) {
     const params = { max_events: 50 };
@@ -168,8 +168,7 @@ async function runPoll() {
   }
   const intervalSec = cfg.heartbeat?.interval_seconds || 30;
   let state = loadState(stateFile);
-  process.env.BDS_MCP_CALL_TIMEOUT_MS =
-    process.env.BDS_MCP_CALL_TIMEOUT_MS || String(cfg.client?.call_timeout_ms || 60000);
+  defaultMcpCallTimeoutIfUnset(cfg.client?.call_timeout_ms || 60000);
 
   for (;;) {
     for (const pool of poolSet) {

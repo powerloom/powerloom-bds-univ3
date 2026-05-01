@@ -1,6 +1,6 @@
 # MCP tool catalog (cost / latency)
 
-All calls are metered unless noted. **Defaults:** `BDS_MCP_CALL_TIMEOUT_MS=60000` (raise to 120000 for `bds_mpp_stream_allTrades` with `max_events=50`).
+All calls are metered unless noted. **Defaults:** `POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS=60000` (raise to 120000 for `bds_mpp_stream_allTrades` with `max_events=50`).
 
 **Cron / OpenClaw:** prefer **snapshot** rows below for heartbeat jobs; reserve **stream** for dedicated long-running consumers (see `SKILL.md` → Hosts & integrators).
 

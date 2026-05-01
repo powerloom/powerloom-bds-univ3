@@ -15,6 +15,7 @@ import {
 } from "./lib/trade-utils.mjs";
 import { loadState, saveState, fingerprintTrade, rememberFingerprint, wasEmitted } from "./lib/state.mjs";
 import { dispatchLines } from "./lib/dispatch.mjs";
+import { defaultMcpCallTimeoutIfUnset } from "./lib/powerloom-env.mjs";
 
 const arg = (name) => {
   const i = process.argv.indexOf(name);
@@ -75,8 +76,7 @@ function formatTradeAlert(tw, verification) {
 
 async function runStream() {
   let state = loadState(stateFile);
-  process.env.BDS_MCP_CALL_TIMEOUT_MS =
-    process.env.BDS_MCP_CALL_TIMEOUT_MS || String(cfg.client?.call_timeout_ms || 120000);
+  defaultMcpCallTimeoutIfUnset(cfg.client?.call_timeout_ms || 120000);
   console.error(
     "[whale-radar] mode=stream tool=bds_mpp_stream_allTrades (all indexed pools; poll_fallback_pools unused)"
   );
@@ -137,8 +137,7 @@ async function runPoll() {
     `[whale-radar] mode=poll pools=${pools.length} tool=bds_mpp_snapshot_trades_pool_address`
   );
   let state = loadState(stateFile);
-  process.env.BDS_MCP_CALL_TIMEOUT_MS =
-    process.env.BDS_MCP_CALL_TIMEOUT_MS || String(cfg.client?.call_timeout_ms || 60000);
+  defaultMcpCallTimeoutIfUnset(cfg.client?.call_timeout_ms || 60000);
 
   for (;;) {
     for (const pool of pools) {
