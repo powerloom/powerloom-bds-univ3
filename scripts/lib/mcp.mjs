@@ -3,7 +3,7 @@ import { powerloomApiKey, mcpDebugEnabled } from "./powerloom-env.mjs";
 /**
  * Powerloom BDS MCP over HTTP+SSE (same wire as Claude / OpenClaw remote MCP).
  * Env: POWERLOOM_API_KEY (required), POWERLOOM_MCP_URL (default https://bds-mcp.powerloom.io/sse),
- * POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS (default 60000; raise for bds_mpp_stream_allTrades with max_events=50).
+ * POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS (default 60000; raise for large `bds_mpp_snapshot_allTrades` responses under backlog).
  *
  * Naming (do not confuse):
  * - **ClawHub skill slug:** `powerloom-bds-univ3` (folder + SKILL.md) — not an MCP tool.

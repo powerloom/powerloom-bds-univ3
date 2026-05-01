@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 /**
- * Token-Flow — all swaps touching a token across indexed pools (stream default).
+ * Token-Flow — per-pool snapshot polls for all pools that list a token (`bds_mpp_snapshot_trades_pool_address`).
+ * **Default:** one round over all pools for the token, then **exit** (cron-friendly). Use **`--daemon`** to loop with `heartbeat.interval_seconds` between rounds.
  */
 
 import { callTool } from "./lib/mcp.mjs";
 import { loadRecipe } from "./lib/recipe-config.mjs";
 import {
-  flattenAllTradesFromSnapshot,
   tradeUsd,
   tradeDirectionLabel,
-  poolInAllowlist,
   buildPoolAllowlistFromTokenPoolsResponse,
 } from "./lib/trade-utils.mjs";
 import {
@@ -31,14 +30,13 @@ const arg = (name) => {
 
 const defaults = {
   name: "token-flow",
-  heartbeat: { mode: "stream", interval_seconds: 30 },
+  heartbeat: { interval_seconds: 30 },
   filters: { token_address: USDC_MAINNET, min_usd: 0, pools: "auto" },
   client: { call_timeout_ms: 120000 },
   dispatch: { channel: "stdout" },
 };
 
 const cfg = loadRecipe("token-flow.yaml", defaults);
-const mode = arg("--mode") || cfg.heartbeat?.mode || "stream";
 const token =
   (arg("--token") || cfg.filters?.token_address || USDC_MAINNET).toLowerCase();
 const minUsd = parseFloat(String(cfg.filters?.min_usd ?? 0));
@@ -47,6 +45,7 @@ const stateFile =
   process.env.TOKEN_FLOW_STATE_FILE ||
   ".powerloom/token-flow-state.json";
 const channel = cfg.dispatch?.channel || "stdout";
+const daemon = process.argv.includes("--daemon");
 
 function collectPoolAddresses(obj) {
   const raw = buildPoolAllowlistFromTokenPoolsResponse({ data: obj });
@@ -105,61 +104,6 @@ function formatTokenAlert(tw, verification) {
   return lines;
 }
 
-async function runStream() {
-  const poolSet = await loadPoolsForToken();
-  if (!poolSet.size) {
-    console.error(
-      `[token-flow] No indexed pools found for token ${token}. Check bds_mpp_dailyActiveTokens / token list.`
-    );
-    process.exit(2);
-  }
-  let state = loadState(stateFile);
-  defaultMcpCallTimeoutIfUnset(cfg.client?.call_timeout_ms || 120000);
-
-  for (;;) {
-    const params = { max_events: 50 };
-    if (state.lastStreamEpoch != null) params.from_epoch = state.lastStreamEpoch + 1;
-    let result;
-    try {
-      result = await callTool("bds_mpp_stream_allTrades", params);
-    } catch (e) {
-      console.error("[token-flow] stream batch failed:", e.message);
-      await new Promise((r) => setTimeout(r, 5000));
-      continue;
-    }
-    const events = result.events || [];
-    let maxEpoch = state.lastStreamEpoch ?? 0;
-    for (const ev of events) {
-      if (ev.skipped) {
-        if (typeof ev.epoch === "number") maxEpoch = Math.max(maxEpoch, ev.epoch);
-        continue;
-      }
-      const verification = ev.verification || null;
-      const snap = ev.snapshot;
-      const epochNum = ev.epoch ?? verification?.epochId;
-      if (typeof epochNum === "number") maxEpoch = Math.max(maxEpoch, epochNum);
-      const rows = flattenAllTradesFromSnapshot(snap).filter((tw) =>
-        poolInAllowlist(tw.poolAddress, poolSet)
-      );
-      for (const tw of rows) {
-        if (tradeUsd(tw) < minUsd) continue;
-        const fp = fingerprintTrade(tw.trade);
-        if (wasEmitted(state, fp)) continue;
-        await dispatchLines(formatTokenAlert(tw, verification), channel);
-        rememberFingerprint(state, fp);
-        const bn = tw.trade?.log?.blockNumber ?? 0;
-        if (bn > (state.lastEmittedBlock || 0)) state.lastEmittedBlock = bn;
-      }
-    }
-    if (events.length === 0) {
-      await new Promise((r) => setTimeout(r, 2000));
-    } else {
-      state.lastStreamEpoch = maxEpoch;
-      saveState(stateFile, state);
-    }
-  }
-}
-
 async function runPoll() {
   const poolSet = await loadPoolsForToken();
   if (!poolSet.size) {
@@ -169,8 +113,9 @@ async function runPoll() {
   const intervalSec = cfg.heartbeat?.interval_seconds || 30;
   let state = loadState(stateFile);
   defaultMcpCallTimeoutIfUnset(cfg.client?.call_timeout_ms || 60000);
+  console.error(`[token-flow] pools=${poolSet.size} token=${token} daemon=${daemon}`);
 
-  for (;;) {
+  async function oneRound() {
     for (const pool of poolSet) {
       let resp;
       try {
@@ -194,18 +139,18 @@ async function runPoll() {
       }
     }
     saveState(stateFile, state);
+  }
+
+  await oneRound();
+  if (!daemon) return;
+
+  for (;;) {
     await new Promise((r) => setTimeout(r, intervalSec * 1000));
+    await oneRound();
   }
 }
 
-if (mode === "poll") {
-  runPoll().catch((e) => {
-    console.error(e);
-    process.exit(1);
-  });
-} else {
-  runStream().catch((e) => {
-    console.error(e);
-    process.exit(1);
-  });
-}
+runPoll().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

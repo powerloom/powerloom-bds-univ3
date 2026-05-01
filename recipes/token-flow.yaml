@@ -1,8 +1,7 @@
-# For cron / OpenClaw: prefer mode: poll — see SKILL.md (Hosts & integrators).
+# Default: one round over all pools for the token, then exit. Use --daemon to repeat.
 name: token-flow
-description: Every swap touching a token (default USDC) across indexed pools.
+description: Every swap touching a token (default USDC) across indexed pools (poll).
 heartbeat:
-  mode: stream
   interval_seconds: 30
 filters:
   token_address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"

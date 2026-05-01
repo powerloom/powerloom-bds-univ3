@@ -10,6 +10,6 @@ Some fee tiers (e.g. 0.3% WETH/USDC) may **not** be indexed in this data market 
 
 ## Multi-pool / token-first
 
-- **All pools / all trades:** `bds_mpp_snapshot_allTrades`, `bds_mpp_stream_allTrades`.
+- **All pools / all trades (bounded):** `bds_mpp_snapshot_allTrades` (skill + cron). Streaming variants may exist on MCP for direct use outside the skill.
 - **Token-scoped:** `bds_mpp_token_token_address_pools`, `bds_mpp_tradeVolumeAllPools_token_address_time_interval`.
 - **Single pool:** `bds_mpp_snapshot_trades_pool_address` — use only when the user explicitly wants one pool.

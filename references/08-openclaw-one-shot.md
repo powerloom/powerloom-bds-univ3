@@ -1,6 +1,6 @@
 # OpenClaw: pay-signup + whale cron (one-shot prompt)
 
-Use this as a **single agent message** after installing the skill from ClawHub. It matches how the skill is meant to run: **bounded** `bds_mpp_snapshot_allTrades` via `scripts/whale-cron.mjs`, **not** streaming or long-lived background processes.
+Use this as a **single agent message** after installing the skill from ClawHub. It matches how the skill is meant to run: **bounded** `bds_mpp_snapshot_allTrades` via `scripts/whale-cron.mjs`. The skill does **not** use streaming trade tools.
 
 ---
 
@@ -43,7 +43,7 @@ Then set up pay-signup and a whale radar cron. Details:
 7. Set WHALE_CRON_STATE_FILE and WHALE_CRON_POOL_CACHE to paths outside the skill directory (e.g. in the workspace root) so they survive openclaw skills install --force.
 
 Constraints:
-- Do NOT use `bds_mpp_stream_allTrades` for this cron — use `bds_mpp_snapshot_allTrades` only.
+- Use `bds_mpp_snapshot_allTrades` only (bounded batches). Do not add streaming trade tools.
 - Do NOT run the tracker as a background process — use OpenClaw cron only.
 - Do NOT show "???" for unknown tokens — resolve via the metadata tool or show the address.
 ````

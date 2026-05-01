@@ -10,7 +10,7 @@ description: |
   Billing: metering service HTTP APIs; optional bds-agent CLI. Agent-first: plan + wallet then pay-signup, then top-up.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
-version: 0.0.9
+version: 0.1
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
@@ -110,24 +110,25 @@ Generic tool runner: `node scripts/powerloom-mcp-client.mjs <tool_name> '{}'`
 
 | Task phrase | Tool(s) |
 |-------------|---------|
-| Track **all swaps for token X** (multi-pool) | `bds_mpp_stream_allTrades` / `bds_mpp_snapshot_allTrades` + **Token-Flow** recipe |
-| **Whale** / USD threshold | `bds_mpp_stream_allTrades` + filters, or **Whale Radar** recipe |
+| Track **all swaps for token X** (multi-pool) | **Token-Flow** recipe (`bds_mpp_snapshot_trades_pool_address` per pool) or `bds_mpp_snapshot_allTrades` via **`whale-cron.mjs`** |
+| **Whale** / USD threshold | **`whale-cron.mjs`** (all pools, bounded) or **`whale-radar.mjs`** (fixed pool list, per-pool snapshots) |
 | **One pool only** | `bds_mpp_snapshot_trades_pool_address` after `bds_mpp_token_token_address_pools` or `bds_mpp_dailyActivePools` |
-| **Streaming** live | `bds_mpp_stream_allTrades` with `from_epoch` checkpoint (see `scripts/whale-radar.mjs`) |
 | **Verify** on-chain | `verify_data_provenance` with `cid`, `epoch_id`, `project_id` from API — never substitute block for epoch |
 
-**Timeouts:** default `POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS=60000`. Use **120000** for `bds_mpp_stream_allTrades` with `max_events=50` if you see timeouts under backlog.
+**Timeouts:** default `POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS=60000`. Raise it (e.g. **120000**) if `bds_mpp_snapshot_allTrades` times out under backlog.
 
 ## Recipes (supported surface)
 
-Pre-built scripts + `recipes/*.yaml` defaults — prefer these over ad-hoc scripts on weaker models.
+Pre-built scripts + `recipes/*.yaml` defaults — prefer these over ad-hoc scripts on weaker models. **This skill does not call streaming catalog tools** (`bds_mpp_stream_*`); every recipe uses **bounded snapshot** MCP calls so runs fit cron and agent sandboxes.
+
+**Cron default:** `whale-radar.mjs`, `token-flow.mjs`, and `defi-analyst.mjs` each run **one bounded round** and **exit** (safe for OpenClaw cron). Pass **`--daemon`** to repeat with `heartbeat.interval_seconds` between rounds (local / long-running only).
 
 | Recipe / entrypoint | Script |
 |---------------------|--------|
-| Whale Radar (stream / per-pool poll) | `node scripts/whale-radar.mjs` — default **stream = all pools**; `--mode poll` uses `poll_fallback_pools` (per-pool snapshot), not `snapshot_allTrades` |
+| Whale Radar (fixed pools) | `node scripts/whale-radar.mjs` — one round over `poll_fallback_pools`; **`--daemon`** for repeat |
 | Whale alerts (cron, all pools) | `node scripts/whale-cron.mjs` — **bounded** one-shot: `bds_mpp_snapshot_allTrades` + pool metadata; alerts include **snapshot** `cid` / epoch / project from `data.verification` — see **Verification provenance** in `references/08-openclaw-one-shot.md` |
-| Token-Flow | `node scripts/token-flow.mjs` (`--token 0x...`) |
-| DeFi Analyst | `node scripts/defi-analyst.mjs` — default **multi-pool** (`bds_mpp_stream_allTrades` + all-pools volume); `filters.scope: single_pool` for one-pool only (`--once` = one shot) |
+| Token-Flow | `node scripts/token-flow.mjs` (`--token 0x...`) — one round per pool for that token; **`--daemon`** for repeat |
+| DeFi Analyst | `node scripts/defi-analyst.mjs` — one round: **multi-pool** (`bds_mpp_snapshot_allTrades` + all-pools volume) or `filters.scope: single_pool`; **`--daemon`** for repeat |
 
 ## Model guidance
 
@@ -137,9 +138,7 @@ Recipes produce the same stdout/Telegram output regardless of model. Ad-hoc "com
 
 **OpenClaw "one shot" setup (install → pay-signup → cron message):** use the copy-paste prompt in **`references/08-openclaw-one-shot.md`** so agents get a single, repeatable instruction block without hunting daily notes.
 
-**Scheduled / cron-style runs** (short heartbeat, one shot per tick): use **`node scripts/whale-cron.mjs`** (all-pool `bds_mpp_snapshot_allTrades`, exits after `MAX_LOOPS`) or, for a **fixed** pool set only, `bds_mpp_snapshot_trades_pool_address` / `whale-radar.mjs --mode poll`. **Do not** use `whale-radar` default **stream** for crons. Each one-shot run stays a **bounded** call; easier on credits and timeouts.
-
-**Stream tools** (`bds_mpp_stream_allTrades`, SSE catalog routes): use only when the **end user** wants a **long-running background** data consumer, deployed **outside** a typical cron "wake up → one batch → exit" model. **Do not** default generated skill glue to streams for cron: streams open a different metering/session pattern and are a poor fit for start-stop heartbeats. This repo's recipes still **default to stream** for interactive demos; integrators should override to **poll** in `recipes/*.yaml` or script flags for production crons.
+**Scheduled / cron-style runs:** Prefer **`whale-cron.mjs`**, **`whale-radar.mjs`**, **`token-flow.mjs`**, or **`defi-analyst.mjs`** with **no** `--daemon` so each invocation **exits**. **Streaming trade tools** (`bds_mpp_stream_*`) are **not** used by this skill.
 
 ## References
 

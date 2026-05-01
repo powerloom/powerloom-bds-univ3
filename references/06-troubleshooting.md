@@ -6,8 +6,8 @@
 | HTTP 401 | Bad or missing API key | Re-copy key from the metering dashboard ([bds-metering.powerloom.io/metering](https://bds-metering.powerloom.io/metering)) or your CLI profile; fix `POWERLOOM_API_KEY`. |
 | HTTP 402 | Credits exhausted | Top up; reduce recipe cadence; run `ensure-credits.mjs` before crons. |
 | HTTP 429 | Rate limit | Increase heartbeat interval; for **cron** schedules prefer **poll** (fewer parallel calls) instead of many snapshot fan-outs. |
-| Tool timeout | Backlog / slow finalization | Raise `POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS`; reduce `max_events` on streams, or use **poll** / smaller snapshot scope. |
-| Empty stream | Idle chain / catch-up | Wait; check `from_epoch` in state file. |
+| Tool timeout | Backlog / slow finalization | Raise `POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS`; reduce snapshot scope (`max_events` / fewer pools). |
+| Empty snapshot | Idle chain / catch-up | Wait; check `from_epoch` in state file (cron / DeFi Analyst). |
 | Wrong verify | Confused epoch vs block | Use `epoch_id` from snapshot / `verification` payload, not `blockNumber`. |
 | Odd outputs after model swap | OpenClaw context mismatch | Restart OpenClaw; recipes are script-driven — state files live under `.powerloom/`. |
 | Skill “ready” in `skills list` / dashboard but main chat ignores it | **Install ≠ injection.** The chat agent may not attach every skill to every session; per-agent config, a **new** session after enabling the skill, or product limits on which skills the model sees. | Enable the skill for **that** agent; start a new chat; add **BDS MCP** in config if you need tools in the tool list. For deterministic behavior, run **`node scripts/…`**. |

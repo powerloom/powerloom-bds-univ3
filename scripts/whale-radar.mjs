@@ -1,17 +1,15 @@
 #!/usr/bin/env node
 /**
- * Whale Radar — long-running: default **stream** (`bds_mpp_stream_allTrades`); or `--mode poll` for a
- * fixed list of pools via `bds_mpp_snapshot_trades_pool_address` (see recipe yaml).
- * For **scheduled / one-shot** runs over **all** pools, use `scripts/whale-cron.mjs` (snapshot all-trades, bounded loops).
+ * Whale Radar — per-pool snapshot polls (`bds_mpp_snapshot_trades_pool_address`).
+ * **Default:** one round over all configured pools, then **exit** (cron-friendly). Use **`--daemon`** to loop with `heartbeat.interval_seconds` between rounds.
+ * For **all pools in one bounded batch**, use `scripts/whale-cron.mjs` (`bds_mpp_snapshot_allTrades`).
  */
 
 import { callTool } from "./lib/mcp.mjs";
 import { loadRecipe } from "./lib/recipe-config.mjs";
 import {
-  flattenAllTradesFromSnapshot,
   tradeUsd,
   tradeDirectionLabel,
-  formatEtherscanTx,
 } from "./lib/trade-utils.mjs";
 import { loadState, saveState, fingerprintTrade, rememberFingerprint, wasEmitted } from "./lib/state.mjs";
 import { dispatchLines } from "./lib/dispatch.mjs";
@@ -24,7 +22,7 @@ const arg = (name) => {
 
 const defaults = {
   name: "whale-radar",
-  heartbeat: { mode: "stream", interval_seconds: 30 },
+  heartbeat: { mode: "poll", interval_seconds: 30 },
   filters: { threshold_usd: 25000 },
   client: {
     call_timeout_ms: 60000,
@@ -37,7 +35,14 @@ const defaults = {
 };
 
 const cfg = loadRecipe("whale-radar.yaml", defaults);
-const mode = arg("--mode") || cfg.heartbeat?.mode || "stream";
+const mode = (arg("--mode") || cfg.heartbeat?.mode || "poll").toLowerCase();
+if (mode !== "poll") {
+  console.error(
+    "[whale-radar] Only poll mode is supported (`bds_mpp_snapshot_trades_pool_address`). For all-pool batches use `node scripts/whale-cron.mjs`.",
+  );
+  process.exit(2);
+}
+
 const threshold = parseFloat(
   arg("--threshold") || String(cfg.filters?.threshold_usd ?? 25000)
 );
@@ -46,6 +51,7 @@ const stateFile =
   process.env.WHALE_RADAR_STATE_FILE ||
   ".powerloom/whale-radar-state.json";
 const channel = cfg.dispatch?.channel || "stdout";
+const daemon = process.argv.includes("--daemon");
 
 function formatTradeAlert(tw, verification) {
   const t = tw.trade;
@@ -74,59 +80,6 @@ function formatTradeAlert(tw, verification) {
   return lines;
 }
 
-async function runStream() {
-  let state = loadState(stateFile);
-  defaultMcpCallTimeoutIfUnset(cfg.client?.call_timeout_ms || 120000);
-  console.error(
-    "[whale-radar] mode=stream tool=bds_mpp_stream_allTrades (all indexed pools; poll_fallback_pools unused)"
-  );
-
-  for (;;) {
-    const params = { max_events: 50 };
-    if (state.lastStreamEpoch != null) {
-      params.from_epoch = state.lastStreamEpoch + 1;
-    }
-    let result;
-    try {
-      result = await callTool("bds_mpp_stream_allTrades", params);
-    } catch (e) {
-      console.error("[whale-radar] stream batch failed:", e.message);
-      await new Promise((r) => setTimeout(r, 5000));
-      continue;
-    }
-    const events = result.events || [];
-    let maxEpoch = state.lastStreamEpoch ?? 0;
-    for (const ev of events) {
-      if (ev.skipped) {
-        if (typeof ev.epoch === "number") maxEpoch = Math.max(maxEpoch, ev.epoch);
-        continue;
-      }
-      const verification = ev.verification || null;
-      const snap = ev.snapshot;
-      const epochNum = ev.epoch ?? verification?.epochId;
-      if (typeof epochNum === "number") maxEpoch = Math.max(maxEpoch, epochNum);
-
-      const rows = flattenAllTradesFromSnapshot(snap);
-      for (const tw of rows) {
-        if (tradeUsd(tw) < threshold) continue;
-        const fp = fingerprintTrade(tw.trade);
-        if (wasEmitted(state, fp)) continue;
-        const lines = formatTradeAlert(tw, verification);
-        await dispatchLines(lines, channel);
-        rememberFingerprint(state, fp);
-        const bn = tw.trade?.log?.blockNumber ?? 0;
-        if (bn > (state.lastEmittedBlock || 0)) state.lastEmittedBlock = bn;
-      }
-    }
-    if (events.length === 0) {
-      await new Promise((r) => setTimeout(r, 2000));
-    } else {
-      state.lastStreamEpoch = maxEpoch;
-      saveState(stateFile, state);
-    }
-  }
-}
-
 async function runPoll() {
   const pools =
     cfg.client?.poll_fallback_pools ||
@@ -134,12 +87,12 @@ async function runPoll() {
     defaults.client.poll_fallback_pools;
   const intervalSec = cfg.heartbeat?.interval_seconds || 30;
   console.error(
-    `[whale-radar] mode=poll pools=${pools.length} tool=bds_mpp_snapshot_trades_pool_address`
+    `[whale-radar] mode=poll pools=${pools.length} tool=bds_mpp_snapshot_trades_pool_address daemon=${daemon}`,
   );
   let state = loadState(stateFile);
   defaultMcpCallTimeoutIfUnset(cfg.client?.call_timeout_ms || 60000);
 
-  for (;;) {
+  async function oneRound() {
     for (const pool of pools) {
       let resp;
       try {
@@ -165,18 +118,18 @@ async function runPoll() {
       }
     }
     saveState(stateFile, state);
+  }
+
+  await oneRound();
+  if (!daemon) return;
+
+  for (;;) {
     await new Promise((r) => setTimeout(r, intervalSec * 1000));
+    await oneRound();
   }
 }
 
-if (mode === "poll") {
-  runPoll().catch((e) => {
-    console.error(e);
-    process.exit(1);
-  });
-} else {
-  runStream().catch((e) => {
-    console.error(e);
-    process.exit(1);
-  });
-}
+runPoll().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
