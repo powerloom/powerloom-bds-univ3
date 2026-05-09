@@ -14,7 +14,7 @@ description: |
   Billing: metering service HTTP APIs; optional bds-agent CLI.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
-version: 0.2.1
+version: 0.2.2
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
