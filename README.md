@@ -12,7 +12,12 @@ Every data point this skill fetches is finalized onchain by Powerloom's decentra
 
 ## Integrators (OpenClaw, cron)
 
-**End-to-end one-shot** (install, signup, env, `whale-cron` job): **`references/08-openclaw-one-shot.md`**.
+**End-to-end one-shot prompts** — pick by onboarding state:
+
+| Variant | Use when | Reference |
+|---------|----------|-----------|
+| Free-key cron | You already have `sk_live_...` from `bds-agent signup` (2 free credits, no wallet) | **`references/09-openclaw-one-shot-free-key.md`** |
+| Pay-signup + cron | You want autonomous wallet-funded onboarding for a 10-credit plan in the same prompt | **`references/08-openclaw-one-shot.md`** |
 
 **Default behavior:** `whale-radar.mjs`, `token-flow.mjs`, and `defi-analyst.mjs` each run **one bounded round** and **exit** (safe for cron). Use **`--daemon`** only if you want a local repeat loop (`heartbeat.interval_seconds` between rounds).
 
@@ -27,7 +32,11 @@ export POWERLOOM_API_KEY=sk_live_...
 node scripts/ensure-credits.mjs
 ```
 
-**Metering (no `bds-agent` required):** `scripts/signup-pay.mjs` (new key, pay-signup; **native or ERC-20** per `quote.payment_kind` — e.g. POWER CGT = native) and `scripts/credits-topup.mjs` (more credits, existing key). See **`SKILL.md`**.
+**Where to get `POWERLOOM_API_KEY`:**
+
+- **Free** (no wallet, 2 credits): `bds-agent signup` — browser device flow on the metering service. Same `sk_live_...` works against this skill, the hosted MCP server, and any pay-signup top-up later.
+- **Wallet-funded** (10-credit plan): `node scripts/signup-pay.mjs` — pay-signup; **native or ERC-20** per `quote.payment_kind` (POWER CGT = native).
+- **More credits, existing key**: `node scripts/credits-topup.mjs`. See **`SKILL.md`**.
 
 Optional: `POWERLOOM_TELEGRAM_BOT_TOKEN`, `POWERLOOM_TELEGRAM_CHAT_ID`, and `dispatch.channel: telegram` in `recipes/*.yaml`.
 

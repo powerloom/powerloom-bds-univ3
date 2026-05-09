@@ -1,16 +1,20 @@
 ---
 name: powerloom-bds-univ3
 description: |
-  Autonomous Uniswap V3 monitoring on consensus-backed data with on-chain payment requirements.
+  Autonomous Uniswap V3 monitoring on consensus-backed data with onchain provenance.
   Every data point is finalized on-chain by Powerloom's decentralized sequencer-validator network (DSV)
   and independently verifiable via verify_data_provenance. Ships with Whale Radar,
   Token-Flow, and Autonomous DeFi Analyst recipes.
-  **IMPORTANT: This skill requires an EVM private key to purchase API credits via on-chain payments** —
-  users must complete a pay-signup flow (plan selection → on-chain payment → API key claim) before accessing data.
-  Billing: metering service HTTP APIs; optional bds-agent CLI. Agent-first: plan + wallet then pay-signup, then top-up.
+  **Two onboarding paths**: (1) **free** — drop in an existing `sk_live_...` from `bds-agent signup`
+  (browser device flow, 2 free credits, no wallet) and run cron immediately
+  (see `references/09-openclaw-one-shot-free-key.md`); (2) **wallet-funded** — autonomous
+  on-chain pay-signup via `scripts/signup-pay.mjs` for a 10-credit plan in the same prompt
+  (see `references/08-openclaw-one-shot.md`). The runtime data path needs only `POWERLOOM_API_KEY`;
+  wallet env vars are required only by the pay-signup and top-up scripts.
+  Billing: metering service HTTP APIs; optional bds-agent CLI.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
-version: 0.1
+version: 0.2
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
@@ -27,13 +31,20 @@ metadata:
     requires:
       bins: ["node"]
       env:
+        # Only POWERLOOM_API_KEY is mandatory at install time. The free-key path
+        # (references/09-openclaw-one-shot-free-key.md) needs nothing else from
+        # this skill's perspective. Wallet/plan envs below are optional and only
+        # consumed by scripts/signup-pay.mjs and scripts/credits-topup.mjs.
+        - POWERLOOM_API_KEY
+      optional_env:
+        # Wallet-funded variants (signup-pay or credits-topup) — only required
+        # if the user invokes those scripts. See references/08-openclaw-one-shot.md.
         - POWERLOOM_EVM_PRIVATE_KEY
         - POWERLOOM_EVM_RPC_URL
         - POWERLOOM_EVM_CHAIN_ID
         - POWERLOOM_PLAN_ID
         - POWERLOOM_TOKEN_SYMBOL
-        - POWERLOOM_API_KEY
-      optional_env:
+        # Dispatch + transport overrides — never required.
         - POWERLOOM_MCP_URL
         - POWERLOOM_TELEGRAM_BOT_TOKEN
         - POWERLOOM_TELEGRAM_CHAT_ID
@@ -49,7 +60,13 @@ metadata:
 
 ## Install
 
-> **⚠️ WARNING: This skill requires an EVM private key for on-chain payments to purchase API credits. We strongly recommend using a burner wallet with limited funds dedicated to this purpose. Never use a wallet holding significant assets or with extensive transaction history for agentic setups.**
+> **Two onboarding paths.**
+>
+> **Free** — run `bds-agent signup` (browser device flow, no wallet, 2 free credits), then paste [`references/09-openclaw-one-shot-free-key.md`](references/09-openclaw-one-shot-free-key.md) into OpenClaw. Sets `POWERLOOM_API_KEY` and a Whale Radar cron. Nothing else needed.
+>
+> **Wallet-funded** — paste [`references/08-openclaw-one-shot.md`](references/08-openclaw-one-shot.md) and `scripts/signup-pay.mjs` runs an autonomous on-chain payment for a 10-credit plan in the same prompt.
+>
+> **⚠️ WARNING — wallet-funded path only:** `signup-pay.mjs` and `credits-topup.mjs` need an EVM private key to broadcast on-chain payments. Use a **burner wallet** with limited funds dedicated to this purpose. Never use a wallet holding significant assets or with extensive transaction history for agentic setups. The free-key path **does not** require any wallet credentials.
 
 **Contract:** [bds-agenthub-billing-metering](https://github.com/powerloom/bds-agenthub-billing-metering). **ClawHub** users only need a **single origin** (default [bds-metering.powerloom.io](https://bds-metering.powerloom.io))— **`bds-agent` commands are optional**; they are a reference CLI for the same JSON bodies you can send with `curl` + a wallet or `ethers`.
 
@@ -65,18 +82,18 @@ metadata:
 
 `{BASE}` is **`POWERLOOM_METERING_BASE_URL`**, e.g. `https://bds-metering.powerloom.io`. Set **`POWERLOOM_API_KEY`** to the `sk_live_...` you get after pay-signup, device signup, or copy from the dashboard.
 
-### OpenClaw `requires.env` (mirrors a pay-signup row + wallet + key)
+### OpenClaw env vars (mandatory vs optional)
 
-| Field | Role |
-|-------|------|
-| `POWERLOOM_EVM_PRIVATE_KEY` | Payer wallet — **use a burner wallet** |
-| `POWERLOOM_EVM_RPC_URL` | JSON-RPC for that chain |
-| `POWERLOOM_EVM_CHAIN_ID` | Must match the plan's `chain_id` |
-| `POWERLOOM_PLAN_ID` | e.g. `launch_10_pl_power_cgt` from `GET /credits/plans` |
-| `POWERLOOM_TOKEN_SYMBOL` | e.g. `POWER` (must match that row) |
-| `POWERLOOM_API_KEY` | After claim (or set after device signup) |
+| Field | When required | Role |
+|-------|---------------|------|
+| `POWERLOOM_API_KEY` | **Always** — only mandatory env at install time | `sk_live_...` from `bds-agent signup` (free path) or `signup-pay.mjs` claim (wallet path) |
+| `POWERLOOM_EVM_PRIVATE_KEY` | Wallet-funded path only | Payer wallet — **use a burner wallet** |
+| `POWERLOOM_EVM_RPC_URL` | Wallet-funded path only | JSON-RPC for that chain |
+| `POWERLOOM_EVM_CHAIN_ID` | Wallet-funded path only | Must match the plan's `chain_id` |
+| `POWERLOOM_PLAN_ID` | Wallet-funded path only | e.g. `launch_10_pl_power_cgt` from `GET /credits/plans` |
+| `POWERLOOM_TOKEN_SYMBOL` | Wallet-funded path only | e.g. `POWER` (must match that row) |
 
-**Path A (browser) only** usually needs `POWERLOOM_API_KEY` in practice. If the host enforces the full list, set wallet + plan to the row you will use, or adjust host policy.
+The schema in `metadata.openclaw.requires.env` lists only `POWERLOOM_API_KEY` as required; the wallet/plan envs above sit in `optional_env` and are read only by `scripts/signup-pay.mjs` (new key, pay-signup) and `scripts/credits-topup.mjs` (more credits on an existing key). Free-key flows pass straight through.
 
 ### Reference client: `bds-agent` (optional)
 
@@ -136,7 +153,14 @@ Recipes produce the same stdout/Telegram output regardless of model. Ad-hoc "com
 
 ## Hosts & integrators (OpenClaw, cron, heartbeats)
 
-**OpenClaw "one shot" setup (install → pay-signup → cron message):** use the copy-paste prompt in **`references/08-openclaw-one-shot.md`** so agents get a single, repeatable instruction block without hunting daily notes.
+**OpenClaw "one shot" setups** — pick the variant that matches the user's onboarding state:
+
+| Variant | Use when | Reference |
+|---------|----------|-----------|
+| Free-key cron | The user already has `sk_live_...` from `bds-agent signup` (2 free credits, no wallet) | [`references/09-openclaw-one-shot-free-key.md`](references/09-openclaw-one-shot-free-key.md) |
+| Pay-signup + cron | The user wants autonomous wallet-funded onboarding for a 10-credit plan in the same prompt | [`references/08-openclaw-one-shot.md`](references/08-openclaw-one-shot.md) |
+
+Both prompts produce the same `Whale Radar` cron firing `node scripts/whale-cron.mjs` every 15s with onchain verification surfaced in every alert. Agents should default to the free-key variant unless the user explicitly asks for autonomous on-chain payment.
 
 **Scheduled / cron-style runs:** Prefer **`whale-cron.mjs`**, **`whale-radar.mjs`**, **`token-flow.mjs`**, or **`defi-analyst.mjs`** with **no** `--daemon` so each invocation **exits**. **Streaming trade tools** (`bds_mpp_stream_*`) are **not** used by this skill.
 
