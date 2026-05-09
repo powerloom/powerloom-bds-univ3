@@ -14,14 +14,23 @@ After install, run npm install in the skill directory.
 
 I already have a Powerloom API key (sk_live_...) from `bds-agent signup` — 2 free credits, no wallet needed. Use that key directly. Do NOT run `scripts/signup-pay.mjs`. Do NOT ask for a private key, RPC URL, plan id, chain id, or token symbol.
 
+**REQUIRED INPUTS — gather BOTH from me in chat BEFORE you install the skill, wire any env, or create any cron job. STOP and ask if either is missing. Do NOT proceed to step 1 below until both are resolved. Asking me for any of these AFTER creating the cron is a failure mode — re-ask BEFORE cron creation.**
+
+a. **Powerloom API key** — paste your `sk_live_...` from `bds-agent signup`. If you don't have one yet, run `bds-agent signup` first (free, 2 credits, browser device flow) and come back. Do not invent or guess a key.
+
+b. **Telegram alerts** — ask explicitly: "Do you want Telegram alerts for whale swaps? If yes, paste your `POWERLOOM_TELEGRAM_BOT_TOKEN` and `POWERLOOM_TELEGRAM_CHAT_ID`. If no, type 'skip' and alerts will print to stdout only."
+   - If I give you both tokens → use them in the cron env (steps 1 and 4 below).
+   - If I explicitly say "skip" / "no Telegram" / "stdout only" → proceed without TG envs and tell me clearly in the final cron summary that alerts will only print to stdout (the cron `--no-deliver` flag means OpenClaw's chat won't see them either).
+   - Do NOT silently default to "stdout is fine." Either both TG values, or an explicit opt-out.
+   - Do NOT look up TG credentials from any OpenClaw config source (`channels.telegram`, `openclaw.json`, etc.) — only use what I paste in this conversation.
+
+Once (a) and (b) are resolved in chat, proceed with the steps below.
+
 Set up a whale radar cron with the existing key. Details:
 
-1. Set the `sk_live_...` API key in OpenClaw under
-   `skills.entries.powerloom-bds-univ3.env.*`:
-   `POWERLOOM_API_KEY` (only required env for this flow).
-   Optional Telegram dispatch:
-   `POWERLOOM_TELEGRAM_BOT_TOKEN`, `POWERLOOM_TELEGRAM_CHAT_ID`.
-   When Telegram envs are unset, `whale-cron.mjs` prints alerts to stdout (still includes the verification block).
+1. Set the gathered envs in OpenClaw under `skills.entries.powerloom-bds-univ3.env.*`:
+   - `POWERLOOM_API_KEY` — required, from input (a).
+   - `POWERLOOM_TELEGRAM_BOT_TOKEN`, `POWERLOOM_TELEGRAM_CHAT_ID` — set both **only** if I gave you values in input (b). If I opted out, leave both unset; `whale-cron.mjs` prints alerts to stdout in that case (still includes the verification block).
 
 2. Pre-flight: `node scripts/ensure-credits.mjs` to confirm the key is valid and balance is non-zero (free signup grants 2 credits).
 
@@ -35,17 +44,20 @@ Set up a whale radar cron with the existing key. Details:
    - Telegram: `parse_mode: MarkdownV2` with full escaping, or plain-text fallback.
    - If the script is missing or broken, rebuild using the skill’s `lib/*` helpers only.
 
-4. Create an OpenClaw cron job:
+4. Create an OpenClaw cron job — **only after** REQUIRED INPUTS (a) and (b) above are fully resolved in chat:
    - Name: e.g. "Whale Radar"
    - Schedule: e.g. every 15s (`--every 15s` with `openclaw cron add`)
    - Timeout: 90s (`--timeout 90000`)
    - Session: isolated (`--session isolated`)
    - Flags: `--no-deliver`, `--light-context`
-   - Message: a shell command that `cd`s to the skill dir, sets env inline
-     (`POWERLOOM_API_KEY`, optionally `POWERLOOM_TELEGRAM_BOT_TOKEN`, `POWERLOOM_TELEGRAM_CHAT_ID`,
-     `POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS=120000`,
-     `WHALE_CRON_THRESHOLD=10000`), then runs `node scripts/whale-cron.mjs`.
-   - Telegram: read `botToken` from OpenClaw `channels.telegram` / config; chat id from user or config.
+   - Message: a shell command that `cd`s to the skill dir, sets env inline, then runs `node scripts/whale-cron.mjs`. Required env in the cron message:
+     - `POWERLOOM_API_KEY=<value from input (a)>`
+     - `POWERLOOM_BDS_MCP_CALL_TIMEOUT_MS=120000`
+     - `WHALE_CRON_THRESHOLD=10000` (default; only override if I asked for a different threshold)
+   - Telegram env in the cron message — **only** if input (b) yielded both values:
+     - `POWERLOOM_TELEGRAM_BOT_TOKEN=<value from input (b)>`
+     - `POWERLOOM_TELEGRAM_CHAT_ID=<value from input (b)>`
+   - Do NOT consult OpenClaw `channels.telegram`, `openclaw.json`, or any other config source for Telegram credentials — only use what I pasted in chat for input (b).
 
 5. Before the first run: `rm -f .powerloom/whale-cron-state.json` if you need a clean epoch cursor.
    Keep `.powerloom/pool-metadata-cache.json` across reinstalls unless debugging metadata.
@@ -54,6 +66,8 @@ Set up a whale radar cron with the existing key. Details:
 
 Constraints:
 - This flow uses an **existing** `sk_live_...` key only. Do NOT initiate any on-chain payment, and do NOT prompt for wallet credentials.
+- **Telegram credentials must be gathered from me in chat (or explicit opt-out received) BEFORE the cron job is created.** Asking me for `POWERLOOM_TELEGRAM_BOT_TOKEN` / `POWERLOOM_TELEGRAM_CHAT_ID` after running `openclaw cron add` and seeing the cron tick (with stdout-only alerts) is a known failure mode — fail the run and re-ask before cron creation.
+- Do NOT use OpenClaw config (`channels.telegram`, `openclaw.json`, etc.) as a fallback Telegram source — chat input only.
 - If the user later wants more credits, point them at `references/08-openclaw-one-shot.md` (wallet-funded pay-signup variant) or `node scripts/credits-topup.mjs` against the same key.
 - Use `bds_mpp_snapshot_allTrades` only (bounded batches). Do not add streaming trade tools.
 - Do NOT run the tracker as a background process — use OpenClaw cron only.
