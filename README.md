@@ -35,8 +35,8 @@ node scripts/ensure-credits.mjs
 **Where to get `POWERLOOM_API_KEY`:**
 
 - **Free** (no wallet, 2 credits): `bds-agent signup` — browser device flow on the metering service. Same `sk_live_...` works against this skill, the hosted MCP server, and any pay-signup top-up later.
-- **Wallet-funded** (10-credit plan): `node scripts/signup-pay.mjs` — pay-signup; **native or ERC-20** per `quote.payment_kind` (POWER CGT = native).
-- **More credits, existing key**: `node scripts/credits-topup.mjs`. See **`SKILL.md`**.
+- **Wallet-funded** (10-credit plan): `node scripts/signup-pay.mjs --dry-run` (quote summary only), then `POWERLOOM_SIGNUP_PAY_CONFIRM=yes node scripts/signup-pay.mjs` or `node scripts/signup-pay.mjs --yes` after verifying recipient/amount on stderr — **native or ERC-20** per `quote.payment_kind` (POWER CGT on 7869 = native).
+- **More credits, existing key**: `node scripts/credits-topup.mjs` — same `--dry-run` / `POWERLOOM_CREDITS_TOPUP_CONFIRM=yes` / `--yes` pattern as signup-pay. See **`SKILL.md`**.
 
 Optional: `POWERLOOM_TELEGRAM_BOT_TOKEN`, `POWERLOOM_TELEGRAM_CHAT_ID`, and `dispatch.channel: telegram` in `recipes/*.yaml`.
 

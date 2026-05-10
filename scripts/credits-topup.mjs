@@ -15,8 +15,16 @@
  *   POWERLOOM_EVM_RPC_URL — if unset, uses plan.rpc_url or chains[].rpc_url (public hints from
  *                        GET /credits/plans; either may be empty — then you must set this)
  *
+ * Confirmation (broadcast protection):
+ *   Interactive TTY: prints summary; type CONFIRM before signing.
+ *   Non-interactive: --yes / -y OR POWERLOOM_CREDITS_TOPUP_CONFIRM=yes after verifying details.
+ *   --dry-run: resolve plan + print summary only; exits 0 without broadcasting.
+ *
  * Usage:
+ *   node scripts/credits-topup.mjs --dry-run
  *   node scripts/credits-topup.mjs
+ *   POWERLOOM_CREDITS_TOPUP_CONFIRM=yes node scripts/credits-topup.mjs
+ *   node scripts/credits-topup.mjs --yes
  */
 
 import { ethers } from "ethers";
@@ -29,6 +37,7 @@ import {
   chainIdParsed,
   tokenSymbol,
 } from "./lib/powerloom-env.mjs";
+import { confirmSpendBeforeBroadcast } from "./lib/confirm-spend.mjs";
 
 const ERC20_ABI = ["function transfer(address to, uint256 amount) returns (bool)"];
 
@@ -115,6 +124,31 @@ async function main() {
 
   const wallet = new ethers.Wallet(pk.startsWith("0x") ? pk : `0x${pk}`);
   const signer = wallet.connect(provider);
+
+  const summaryLines = [
+    "[credits-topup] Top-up summary — verify before broadcasting:",
+    `  plan_id       ${pid}`,
+    `  chain_id      ${chainId}`,
+    `  token_symbol  ${symRaw}`,
+    `  payment_kind  ${paymentKind}`,
+    `  recipient     ${recipient}`,
+    `  amount        ${amount.toString()} (atomic units, decimals=${plan.token_decimals})`,
+    `  payer         ${wallet.address}`,
+  ];
+
+  if (process.argv.includes("--dry-run")) {
+    for (const line of summaryLines) {
+      console.error(line);
+    }
+    console.error("[credits-topup] --dry-run: no transaction broadcast. Re-run without --dry-run after confirming.");
+    process.exit(0);
+  }
+
+  await confirmSpendBeforeBroadcast({
+    scriptTag: "credits-topup",
+    envConfirmVar: "POWERLOOM_CREDITS_TOPUP_CONFIRM",
+    summaryLines,
+  });
 
   let tx;
   if (paymentKind === "native_value") {

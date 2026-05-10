@@ -16,10 +16,19 @@
  *   POWERLOOM_AGENT_NAME — default openclaw-pay-agent
  *   POWERLOOM_EMAIL — if set, must not already be registered
  *
+ * Confirmation (broadcast protection — avoids silent spend after quote):
+ *   Interactive TTY: prints quote summary; you must type CONFIRM before signing.
+ *   Non-interactive (OpenClaw / CI): pass --yes OR set POWERLOOM_SIGNUP_PAY_CONFIRM=yes
+ *   after manually verifying recipient, amount, chain, token, and plan on stderr output.
+ *   --dry-run: fetch quote + print summary only; exits 0 without broadcasting (review step).
+ *
  * On success, prints JSON with api_key — set POWERLOOM_API_KEY from the output.
  *
  * Usage:
+ *   node scripts/signup-pay.mjs --dry-run
  *   node scripts/signup-pay.mjs
+ *   POWERLOOM_SIGNUP_PAY_CONFIRM=yes node scripts/signup-pay.mjs
+ *   node scripts/signup-pay.mjs --yes
  */
 
 import { ethers } from "ethers";
@@ -33,6 +42,7 @@ import {
   agentNameOr,
   signupEmail,
 } from "./lib/powerloom-env.mjs";
+import { confirmSpendBeforeBroadcast } from "./lib/confirm-spend.mjs";
 
 const ERC20_ABI = ["function transfer(address to, uint256 amount) returns (bool)"];
 
@@ -106,6 +116,33 @@ async function main() {
   const signer = wallet.connect(provider);
   const amount = BigInt(quote.amount_atomic);
   const isNative = quote.payment_kind === "native_value";
+
+  const summaryLines = [
+    "[signup-pay] Quote summary — verify before broadcasting:",
+    `  plan_id       ${pid}`,
+    `  chain_id      ${quote.chain_id}`,
+    `  token_symbol  ${sym}`,
+    `  payment_kind  ${quote.payment_kind}`,
+    `  recipient     ${quote.recipient}`,
+    `  amount_atomic ${quote.amount_atomic}`,
+    `  payer         ${wallet.address}`,
+    `  signup_nonce  ${quote.signup_nonce}`,
+  ];
+
+  if (process.argv.includes("--dry-run")) {
+    for (const line of summaryLines) {
+      console.error(line);
+    }
+    console.error("[signup-pay] --dry-run: no transaction broadcast. Re-run without --dry-run after confirming.");
+    process.exit(0);
+  }
+
+  await confirmSpendBeforeBroadcast({
+    scriptTag: "signup-pay",
+    envConfirmVar: "POWERLOOM_SIGNUP_PAY_CONFIRM",
+    summaryLines,
+  });
+
   let tx;
   if (isNative) {
     console.error("[signup-pay] payment_kind=native_value → send native/CGT value to recipient");
