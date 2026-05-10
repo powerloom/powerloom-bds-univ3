@@ -40,7 +40,7 @@ export async function confirmSpendBeforeBroadcast({
     );
     console.error(
       `  Inspect the quote details above, then either:` +
-        ` (a) re-run with --yes, or (b) set ${envConfirmVar}=yes`,
+        ` (a) re-run with --yes (preferred for OpenClaw: ephemeral argv, do not persist in skill env), or (b) set ${envConfirmVar}=yes for a single CI invocation only`,
     );
     console.error(
       `  Autonomous agents (OpenClaw, CI) should only set ${envConfirmVar}=yes after the operator verified recipient, token, chain, and amount.`,

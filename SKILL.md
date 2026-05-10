@@ -14,7 +14,7 @@ description: |
   Billing: metering service HTTP APIs; optional bds-agent CLI.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
-version: 0.2.3
+version: 0.2.4
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
@@ -107,8 +107,8 @@ The schema in `metadata.openclaw.requires.env` lists only `POWERLOOM_API_KEY` as
 
 | Script | What it does |
 |--------|----------------|
-| `node scripts/signup-pay.mjs` | **New** key: pay-signup (quote → on-chain pay → claim). Uses **`quote.payment_kind`**: `native_value` = send **native/CGT** (`tx.value` to `recipient`); `erc20` = token **`transfer`**. For **POWER (7869) CGT** plans, metering uses **`native_value`** — do not force ERC-20. **Broadcast protection:** interactive shells prompt `CONFIRM`; non-interactive shells require `--yes` or `POWERLOOM_SIGNUP_PAY_CONFIRM=yes`. **`--dry-run`** prints quote summary and exits without sending a tx. |
-| `node scripts/credits-topup.mjs` | **More** credits: uses existing **`POWERLOOM_API_KEY`**, fetches `GET /credits/plans`, matches **`POWERLOOM_PLAN_ID` + `POWERLOOM_EVM_CHAIN_ID` + `POWERLOOM_TOKEN_SYMBOL`**, sends **ERC-20** or **native** per `payment_kind`, then **`POST /credits/topup`**. Same confirmation gate as signup-pay (`--yes`, `POWERLOOM_CREDITS_TOPUP_CONFIRM=yes`, or TTY `CONFIRM`). **`--dry-run`** prints summary only. Set **`POWERLOOM_EVM_RPC_URL`** when **`chains[].rpc_url`** is empty or you need a specific node (the API never exposes the server's private RPC). |
+| `node scripts/signup-pay.mjs` | **New** key: pay-signup (quote → on-chain pay → claim). Uses **`quote.payment_kind`**: `native_value` = send **native/CGT** (`tx.value` to `recipient`); `erc20` = token **`transfer`**. For **POWER (7869) CGT** plans, metering uses **`native_value`** — do not force ERC-20. **Broadcast protection:** interactive shells prompt `CONFIRM`; non-interactive shells require **`--yes`** (preferred for OpenClaw — ephemeral argv, do not persist in skill env) **or** `POWERLOOM_SIGNUP_PAY_CONFIRM=yes` (CI one-shot only). **`--dry-run`** prints quote summary and exits without sending a tx. |
+| `node scripts/credits-topup.mjs` | **More** credits: uses existing **`POWERLOOM_API_KEY`**, fetches `GET /credits/plans`, matches **`POWERLOOM_PLAN_ID` + `POWERLOOM_EVM_CHAIN_ID` + `POWERLOOM_TOKEN_SYMBOL`**, sends **ERC-20** or **native** per `payment_kind`, then **`POST /credits/topup`**. Same confirmation gate as signup-pay (**`--yes`** preferred; **`POWERLOOM_CREDITS_TOPUP_CONFIRM=yes`** for CI one-shot only; TTY `CONFIRM`). **`--dry-run`** prints summary only. Set **`POWERLOOM_EVM_RPC_URL`** when **`chains[].rpc_url`** is empty or you need a specific node (the API never exposes the server's private RPC). |
 | `node scripts/ensure-credits.mjs` | **Balance** only (`GET /credits/balance`); no purchase. |
 
 `npm install` once (adds `ethers`).

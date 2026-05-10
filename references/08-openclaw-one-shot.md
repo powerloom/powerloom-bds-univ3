@@ -27,7 +27,9 @@ Then set up pay-signup and a whale radar cron. Details:
 1. PLAN: launch_10_pl_power_cgt (POWER native on chain 7869, rpc-v2.powerloom.network)
 2. Pay-signup using `scripts/signup-pay.mjs` with the private key from input (a):
    - **Recommended:** run `node scripts/signup-pay.mjs --dry-run` first — prints quote summary (recipient, amount_atomic, chain, payment_kind) to stderr; paste into chat so I can confirm values against metering UI / `/credits/plans`.
-   - **Broadcast:** then run `POWERLOOM_SIGNUP_PAY_CONFIRM=yes node scripts/signup-pay.mjs` (equivalent: `node scripts/signup-pay.mjs --yes`). Non-interactive shells refuse to broadcast without one of these opt-ins — this is intentional broadcast protection.
+   - **Broadcast (non-interactive):** run `node scripts/signup-pay.mjs --yes` as a **one-off shell command** after review — **do not** persist `--yes` or any confirmation bypass inside OpenClaw long-lived skill env (`skills.entries.*.env`). CI operators may instead use `POWERLOOM_SIGNUP_PAY_CONFIRM=yes` for a single invocation; avoid leaving that variable set in autonomous sessions.
+   - **TTY:** omit `--yes`; the script prompts `CONFIRM` interactively.
+   Non-interactive shells refuse to broadcast without `--yes` / `POWERLOOM_SIGNUP_PAY_CONFIRM=yes` — this is intentional broadcast protection.
    `signup-pay.mjs` uses `quote.payment_kind`: `native_value` → `sendTransaction({ value })`; `erc20` → `token.transfer()`.
 3. After signup, set the `sk_live_...` API key and all six env vars in OpenClaw under
    `skills.entries.powerloom-bds-univ3.env.*`:
@@ -62,7 +64,7 @@ Then set up pay-signup and a whale radar cron. Details:
 7. Set WHALE_CRON_STATE_FILE and WHALE_CRON_POOL_CACHE to paths outside the skill directory (e.g. in the workspace root) so they survive openclaw skills install --force.
 
 Constraints:
-- **Pay-signup broadcast:** run `node scripts/signup-pay.mjs --dry-run` first unless I explicitly waive dry-run in chat; paste stderr quote summary into chat for my review; then run `POWERLOOM_SIGNUP_PAY_CONFIRM=yes node scripts/signup-pay.mjs` (or `node scripts/signup-pay.mjs --yes`). Non-interactive shells refuse to broadcast without `--yes` / `POWERLOOM_SIGNUP_PAY_CONFIRM=yes` — this is intentional (ClawScan / auditor expectation).
+- **Pay-signup broadcast:** run `node scripts/signup-pay.mjs --dry-run` first unless I explicitly waive dry-run in chat; paste stderr quote summary into chat for my review; then run **`node scripts/signup-pay.mjs --yes` once** as an ephemeral shell invocation (not saved in OpenClaw skill env). CI may use `POWERLOOM_SIGNUP_PAY_CONFIRM=yes` for a single job — do not leave confirmation bypass variables persisted alongside wallet keys. TTY sessions type `CONFIRM` instead.
 - **Telegram credentials must be gathered from me in chat (or explicit opt-out received) BEFORE the cron job is created.** Asking me for `POWERLOOM_TELEGRAM_BOT_TOKEN` / `POWERLOOM_TELEGRAM_CHAT_ID` after running `openclaw cron add` and seeing the cron tick (with stdout-only alerts) is a known failure mode — fail the run and re-ask before cron creation.
 - Do NOT use OpenClaw config (`channels.telegram`, `openclaw.json`, etc.) as a fallback Telegram source — chat input only.
 - Use `bds_mpp_snapshot_allTrades` only (bounded batches). Do not add streaming trade tools.
