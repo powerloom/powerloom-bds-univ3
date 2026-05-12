@@ -5,8 +5,10 @@ description: |
   Every data point is finalized on-chain by Powerloom's decentralized sequencer-validator network (DSV)
   and independently verifiable via verify_data_provenance. Ships with Whale Radar,
   Token-Flow, and Autonomous DeFi Analyst recipes.
-  **Two onboarding paths**: (1) **free** — drop in an existing `sk_live_...` from `bds-agent signup`
-  (browser device flow, 2 free credits, no wallet) and run cron immediately
+  **Two onboarding paths**: (1) **free** — sign up at
+  `https://bds-metering.powerloom.io/metering` (enter email + agent name, complete Turnstile,
+  get `sk_live_...` immediately — no CLI, no wallet, 2 free credits) or use `bds-agent signup`
+  (same flow from the terminal) and run cron immediately
   (see `references/09-openclaw-one-shot-free-key.md`); (2) **wallet-funded** — autonomous
   on-chain pay-signup via `scripts/signup-pay.mjs` for a 10-credit plan in the same prompt
   (see `references/08-openclaw-one-shot.md`). The runtime data path needs only `POWERLOOM_API_KEY`;
@@ -14,7 +16,7 @@ description: |
   Billing: metering service HTTP APIs; optional bds-agent CLI.
   Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
   "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
-version: 0.2.4
+version: 0.2.5
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
@@ -62,7 +64,7 @@ metadata:
 
 > **Two onboarding paths.**
 >
-> **Free** — run `bds-agent signup` (browser device flow, no wallet, 2 free credits), then paste [`references/09-openclaw-one-shot-free-key.md`](references/09-openclaw-one-shot-free-key.md) into OpenClaw. Sets `POWERLOOM_API_KEY` and a Whale Radar cron. Nothing else needed.
+> **Free** — sign up at [`bds-metering.powerloom.io/metering`](https://bds-metering.powerloom.io/metering) (enter email + agent name, complete Turnstile, get `sk_live_...` immediately — no CLI, no wallet, 2 free credits). Alternatively, `bds-agent signup` runs the same flow from the terminal. Then paste [`references/09-openclaw-one-shot-free-key.md`](references/09-openclaw-one-shot-free-key.md) into OpenClaw. Sets `POWERLOOM_API_KEY` and a Whale Radar cron. Nothing else needed.
 >
 > **Wallet-funded** — paste [`references/08-openclaw-one-shot.md`](references/08-openclaw-one-shot.md) and `scripts/signup-pay.mjs` runs an autonomous on-chain payment for a 10-credit plan in the same prompt.
 >
@@ -76,7 +78,7 @@ metadata:
 |------|-----|
 | List SKUs | `GET {BASE}/credits/plans` — no auth. Choose a plan row: `id`, `chain_id`, `token_symbol` (and note `payment_kind`: ERC-20 vs native / CGT). **`chains[].rpc_url`** is a **public** JSON-RPC hint only when the metering deployment sets it; it may be **empty** — use **`POWERLOOM_EVM_RPC_URL`** for wallet / script calls in that case. |
 | New key, wallet-only | **Pay-signup:** `POST {BASE}/signup/pay/quote` → pay on chain → `POST {BASE}/signup/pay/claim` with `signup_nonce` + `tx_hash`. Returns `api_key`. |
-| New key, browser | Human device flow on `{BASE}/metering` (same service). |
+| New key, browser | Human device flow on [`{BASE}/metering`](https://bds-metering.powerloom.io/metering) (same service). Enter email + agent name, complete Turnstile, get `sk_live_...` immediately. |
 | More credits, existing key | `POST {BASE}/credits/topup` with `Authorization: Bearer sk_live_…` and tx / plan (not the pay-signup endpoints). |
 | Check balance | `GET {BASE}/credits/balance` with `Authorization: Bearer …` |
 
@@ -86,7 +88,7 @@ metadata:
 
 | Field | When required | Role |
 |-------|---------------|------|
-| `POWERLOOM_API_KEY` | **Always** — only mandatory env at install time | `sk_live_...` from `bds-agent signup` (free path) or `signup-pay.mjs` claim (wallet path) |
+| `POWERLOOM_API_KEY` | **Always** — only mandatory env at install time | `sk_live_...` from [`bds-metering.powerloom.io/metering`](https://bds-metering.powerloom.io/metering) or `bds-agent signup` (free path) or `signup-pay.mjs` claim (wallet path) |
 | `POWERLOOM_EVM_PRIVATE_KEY` | Wallet-funded path only | Payer wallet — **use a burner wallet** |
 | `POWERLOOM_EVM_RPC_URL` | Wallet-funded path only | JSON-RPC for that chain |
 | `POWERLOOM_EVM_CHAIN_ID` | Wallet-funded path only | Must match the plan's `chain_id` |
@@ -157,7 +159,7 @@ Recipes produce the same stdout/Telegram output regardless of model. Ad-hoc "com
 
 | Variant | Use when | Reference |
 |---------|----------|-----------|
-| Free-key cron | The user already has `sk_live_...` from `bds-agent signup` (2 free credits, no wallet) | [`references/09-openclaw-one-shot-free-key.md`](references/09-openclaw-one-shot-free-key.md) |
+| Free-key cron | The user already has `sk_live_...` from [`bds-metering.powerloom.io/metering`](https://bds-metering.powerloom.io/metering) or `bds-agent signup` (2 free credits, no wallet) | [`references/09-openclaw-one-shot-free-key.md`](references/09-openclaw-one-shot-free-key.md) |
 | Pay-signup + cron | The user wants autonomous wallet-funded onboarding for a 10-credit plan in the same prompt | [`references/08-openclaw-one-shot.md`](references/08-openclaw-one-shot.md) |
 
 Both prompts produce the same `Whale Radar` cron firing `node scripts/whale-cron.mjs` every 15s with onchain verification surfaced in every alert. Agents should default to the free-key variant unless the user explicitly asks for autonomous on-chain payment.
