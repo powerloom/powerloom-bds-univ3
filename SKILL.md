@@ -2,20 +2,11 @@
 name: powerloom-bds-univ3
 description: |
   Autonomous Uniswap V3 monitoring on consensus-backed data with onchain provenance.
-  Every data point is finalized on-chain by Powerloom's decentralized sequencer-validator network (DSV)
-  and independently verifiable via verify_data_provenance. Ships with Whale Radar,
-  Token-Flow, and Autonomous DeFi Analyst recipes.
-  **Two onboarding paths**: (1) **free** — sign up at
-  `https://bds-metering.powerloom.io/metering` (enter email + agent name, complete Turnstile,
-  get `sk_live_...` immediately — no CLI, no wallet, 2 free credits) or use `bds-agent signup`
-  (same flow from the terminal) and run cron immediately
-  (see `references/09-openclaw-one-shot-free-key.md`); (2) **wallet-funded** — autonomous
-  on-chain pay-signup via `scripts/signup-pay.mjs` for a 10-credit plan in the same prompt
-  (see `references/08-openclaw-one-shot.md`). The runtime data path needs only `POWERLOOM_API_KEY`;
-  wallet env vars are required only by the pay-signup and top-up scripts.
-  Billing: metering service HTTP APIs; optional bds-agent CLI.
-  Triggers on phrases like "whale alert", "track trades", "all trades for", "by token",
-  "ERC20", "ERC20 token swaps", "Powerloom", "verify on-chain", "verified data".
+  Every data point is finalized on-chain by Powerloom's DSV network and independently
+  verifiable. Ships with Whale Radar, Token-Flow, and DeFi Analyst recipes.
+  Free API key at bds-metering.powerloom.io/metering (2 credits, no wallet).
+  Triggers on "whale alert", "track trades", "all trades for", "by token",
+  "Powerloom", "verify on-chain", "verified data".
 version: 0.2.5
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
