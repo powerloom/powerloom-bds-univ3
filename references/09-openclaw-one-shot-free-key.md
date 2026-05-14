@@ -80,7 +80,7 @@ Constraints:
 
 `scripts/whale-cron.mjs` only consumes `POWERLOOM_API_KEY` (via `lib/mcp.mjs`) plus the optional Telegram envs (`lib/powerloom-env.mjs` `telegramBotToken()` / `telegramChatId()`). The wallet/plan env getters in `lib/powerloom-env.mjs` are **only** read by `scripts/signup-pay.mjs` and `scripts/credits-topup.mjs` — both of which this prompt explicitly skips. The skill's `metadata.openclaw.requires.env` schema in `SKILL.md` lists wallet vars as **optional** (`optional_env`) for this exact reason.
 
-When the 2 free credits run out (~1440 epochs of data per credit on metered routes), upgrade in either of two ways without re-onboarding:
+When the 2 free credits run out (~7200 epochs of data per credit on metered routes), upgrade in either of two ways without re-onboarding:
 
 - **Wallet-funded plan, in the agent**: paste the [wallet-funded one-shot](./08-openclaw-one-shot.md) — runs `signup-pay.mjs` and refreshes the API key.
 - **Top-up the existing key**: `node scripts/credits-topup.mjs` with `POWERLOOM_PLAN_ID`, `POWERLOOM_EVM_CHAIN_ID`, `POWERLOOM_TOKEN_SYMBOL`, and a funded wallet — adds credits to the same `sk_live_...`.
