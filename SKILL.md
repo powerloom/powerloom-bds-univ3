@@ -7,7 +7,7 @@ description: |
   Free API key at bds-metering.powerloom.io/metering (2 credits, no wallet).
   Triggers on "whale alert", "track trades", "all trades for", "by token",
   "Powerloom", "verify on-chain", "verified data".
-version: 0.2.5
+version: 0.2.6
 homepage: https://bds-metering.powerloom.io
 repository: https://github.com/powerloom/powerloom-bds-univ3
 tags:
